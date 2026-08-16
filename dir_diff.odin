@@ -33,6 +33,7 @@ RED := "\e[0;91m"
 
 DirectoryInfo :: struct {
 	name_dir: string,
+	path: string,
 	total_files: int,
 	file_names_array : [dynamic]string
 }
@@ -79,14 +80,15 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false) -
 	dir_info := DirectoryInfo{
 		name_dir = dir_name,
 		total_files = total_files,
-		file_names_array = file_names_array
+		file_names_array = file_names_array,
+		path = dir_path
 	}
 
 	return dir_info
 
 }
 
-find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (string) {
+find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (DirectoryInfo) {
 
 	a := dir_a.total_files
 	b := dir_b.total_files
@@ -95,30 +97,30 @@ find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (string) {
 
 	if a >= b {
 		res = strings.concatenate({res, dir_a.name_dir})
-		printf("%vRES: %v%v", BOLD_YELLOW, res, RESET)
-		return res
+		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files,RESET)
+		return dir_a
 	} else {
 		res = strings.concatenate({res, dir_b.name_dir})
-		printf("%vRES: %v%v", BOLD_YELLOW, res, RESET)
-		return res
+		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files,RESET)
+		return dir_b
 	}
 }
 
-get_paths_dirs :: proc(){
+get_paths_dirs :: proc() -> ([3]DirectoryInfo){
 	buffer : [1024]byte
 	// get input from the user
 	print("Insert DIR 1 path: ")
 	path1, err_1 := os.read(os.stdin, buffer[:])
 	if err_1 != nil {
 		fmt.eprintln("ERROR with PATH 1:", err_1)
-		return
+		panic("ERROR with PATH 1")
 	}
 
 	print("Insert DIR 2 path: ")
  	path2, err_2 := os.read(os.stdin, buffer[path1:])
-	if err_1 != nil {
-		fmt.eprintln("ERROR with PATH 1:", err_1)
-		return
+	if err_2 != nil {
+		fmt.eprintln("ERROR with PATH 2:", err_2)
+		panic("ERROR with PATH 2")
 	}
 	path1_str := string(buffer[:path1])
 	path2_str := string(buffer[path1:path1+path2])
@@ -129,16 +131,30 @@ get_paths_dirs :: proc(){
 	printf("path1_str ==> : %v", path1_str)
 	printf("path2_str ==> : %v", path2_str)
 
+	// FOR testing and debugging only:
 	// path1_str := "/Users/gero/Documents/Obsidian-docs/Coding-Books"
 	// path2_str := "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
 
 	path1_dir := get_array_file_names(path1_str)
-	path2_dir := get_array_file_names(path2_str)	
+	path2_dir := get_array_file_names(path2_str)
 
+	// TODO(gero) Check this in the future: 
+	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
+	// BUT this is not necessarily the case always
 
-	// print(path1_dir)
-	// print(path2_dir)
-	printf("BIGGER FILE %v", find_bigger_dir(path1_dir, path2_dir))
+	biggest_dir : DirectoryInfo = find_bigger_dir(path1_dir, path2_dir)
+	printf("Biggest DIR: %v", biggest_dir.name_dir)
+	printf("Biggest DIR Path: %v", biggest_dir.path)
+
+	return {biggest_dir, path1_dir, path2_dir}
+}
+
+find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]string){
+	for file, index in dir_a.file_names_array {
+		printf("DIR A: %i -> %v", index, file)
+	}
+
+	return dir_a.file_names_array 
 }
 
 
@@ -148,7 +164,12 @@ get_paths_dirs :: proc(){
 
 main :: proc(){
 	welcome_header()
-	get_paths_dirs()
+	dirs := get_paths_dirs()
+	biggest_dir := dirs[0]
+	dir_a := dirs[1]
+	dir_b := dirs[2]
+
+	foo := find_duplicates_in_two_dirs(dir_a, dir_b)
 
 	// path_dir_1, path_dir_2 := get_paths_dirs()
 	// result := compare_dirs(path_dir_1, path_dir_2)
