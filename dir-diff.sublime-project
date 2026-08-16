@@ -1,0 +1,20 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+		},
+		{
+			"path": "/Users/gero/odin-macos-arm64-nightly+2026-07-10/core"
+		},
+	],
+	"debugger_configurations":
+	[
+		{
+			"type":"lldb",
+			"request":"launch", 
+			"name": "Odin Debug",
+			"program": "${folder}/debug_build-main_odin",
+		}
+	],
+}
