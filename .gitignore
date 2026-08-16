@@ -6,6 +6,7 @@ main
 debug_build-main_odin
 debug_build-main_odin.dSYM/*
 dir_diff
+dir-diff
 dir-diff.dSYM/*
 
 ### macOS ###
