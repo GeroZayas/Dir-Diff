@@ -95,11 +95,11 @@ find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (string) {
 
 	if a >= b {
 		res = strings.concatenate({res, dir_a.name_dir})
-		printf("RES: %v", res)
+		printf("%vRES: %v%v", BOLD_YELLOW, res, RESET)
 		return res
 	} else {
 		res = strings.concatenate({res, dir_b.name_dir})
-		printf("RES: %v", res)
+		printf("%vRES: %v%v", BOLD_YELLOW, res, RESET)
 		return res
 	}
 }
