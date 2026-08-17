@@ -14,6 +14,8 @@ package dir_diff
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:mem"
+import "core:log"
 
 print :: fmt.println
 printf :: fmt.printfln
@@ -64,7 +66,6 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false) -
 	dir_name := os.base(dir_path)
 
 	file_names_array : [dynamic]string
-	defer delete(file_names_array)
 
 	for file in files_info_array {
 		append(&file_names_array, file.name)
@@ -94,9 +95,11 @@ find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (DirectoryInfo) {
 	b := dir_b.total_files
 
 	res := "The Dir with the most files is: "
-
+	defer delete(res)
+	
 	if a >= b {
 		res = strings.concatenate({res, dir_a.name_dir})
+		
 		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files,RESET)
 		return dir_a
 	} else {
@@ -106,55 +109,67 @@ find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (DirectoryInfo) {
 	}
 }
 
-get_paths_dirs :: proc() -> ([3]DirectoryInfo){
-	buffer : [1024]byte
-	// get input from the user
-	print("Insert DIR 1 path: ")
-	path1, err_1 := os.read(os.stdin, buffer[:])
-	if err_1 != nil {
-		fmt.eprintln("ERROR with PATH 1:", err_1)
-		panic("ERROR with PATH 1")
-	}
-
-	print("Insert DIR 2 path: ")
- 	path2, err_2 := os.read(os.stdin, buffer[path1:])
-	if err_2 != nil {
-		fmt.eprintln("ERROR with PATH 2:", err_2)
-		panic("ERROR with PATH 2")
-	}
-	path1_str := string(buffer[:path1])
-	path2_str := string(buffer[path1:path1+path2])
-
-	path1_str = strings.trim_right(path1_str, "\n")
-	path2_str = strings.trim_right(path2_str, "\n")
-
-	printf("path1_str ==> : %v", path1_str)
-	printf("path2_str ==> : %v", path2_str)
-
+get_paths_dirs :: proc(debug: bool) -> ([2]DirectoryInfo){
+	path1_str : string
+	path2_str : string
 	// FOR testing and debugging only:
-	// path1_str := "/Users/gero/Documents/Obsidian-docs/Coding-Books"
-	// path2_str := "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
+	if debug {
+		path1_str = "/Users/gero/Documents/Obsidian-docs/Coding-Books"
+		path2_str = "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
+	} else {
+		buffer : [1024]byte
+		// get input from the user
+		print("Insert DIR 1 path: ")
+		path1, err_1 := os.read(os.stdin, buffer[:])
+		if err_1 != nil {
+			fmt.eprintln("ERROR with PATH 1:", err_1)
+			panic("ERROR with PATH 1")
+		}
 
-	path1_dir := get_array_file_names(path1_str)
-	path2_dir := get_array_file_names(path2_str)
+		print("Insert DIR 2 path: ")
+	 	path2, err_2 := os.read(os.stdin, buffer[path1:])
+		if err_2 != nil {
+			fmt.eprintln("ERROR with PATH 2:", err_2)
+			panic("ERROR with PATH 2")
+		}
+		path1_str = string(buffer[:path1])
+		path2_str = string(buffer[path1:path1+path2])
+
+		path1_str = strings.trim_right(path1_str, "\n")
+		path2_str = strings.trim_right(path2_str, "\n")
+
+		printf("path1_str ==> : %v", path1_str)
+		printf("path2_str ==> : %v", path2_str)
+	}
+
+	path1_dir: DirectoryInfo = get_array_file_names(path1_str)
+	path2_dir: DirectoryInfo = get_array_file_names(path2_str)
 
 	// TODO(gero) Check this in the future: 
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
 	biggest_dir : DirectoryInfo = find_bigger_dir(path1_dir, path2_dir)
+	other_dir : DirectoryInfo = path1_dir if path1_dir.name_dir != biggest_dir.name_dir else path2_dir
 	printf("Biggest DIR: %v", biggest_dir.name_dir)
 	printf("Biggest DIR Path: %v", biggest_dir.path)
 
-	return {biggest_dir, path1_dir, path2_dir}
+	return {biggest_dir, other_dir}
 }
 
 find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]string){
-	for file, index in dir_a.file_names_array {
-		printf("DIR A: %i -> %v", index, file)
+	// Dir A has to be the dir with the most files 
+	duplicates : [dynamic]string
+
+	for file_i in dir_a.file_names_array {
+		for file_j in dir_b.file_names_array {
+			if file_i == file_j {
+				append(&duplicates, file_i)
+			}
+		}
 	}
 
-	return dir_a.file_names_array 
+	return duplicates
 }
 
 
@@ -163,16 +178,54 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]st
 // ==================
 
 main :: proc(){
+
+	// Allocations trackers
+	track: mem.Tracking_Allocator
+	mem.tracking_allocator_init(&track, context.allocator)
+	context.allocator = mem.tracking_allocator(&track)
+
+	context.logger = log.create_console_logger()
+
+	// =============== START OF ACTUAL PROGRAM ===================
+
 	welcome_header()
-	dirs := get_paths_dirs()
-	biggest_dir := dirs[0]
-	dir_a := dirs[1]
-	dir_b := dirs[2]
+	// if get_paths_dirs(true) <- true means hardcoded paths for testing. MAKE IT FALSE when for real
+	dirs := get_paths_dirs(true)
+	biggest_dir, other_dir := dirs[0], dirs[1]
+	duplicates := find_duplicates_in_two_dirs(biggest_dir, other_dir)
 
-	foo := find_duplicates_in_two_dirs(dir_a, dir_b)
+	print("DUPLICATES ARE:")
+	print("========================================")
+	printf("TOTAL: %i", len(duplicates))
+	print("========================================")
+	for dup, index in duplicates {
+		printf("%i ==> %s", index + 1, dup)
+	}
+	print("========================================")
 
-	// path_dir_1, path_dir_2 := get_paths_dirs()
-	// result := compare_dirs(path_dir_1, path_dir_2)
 
-	// print(result)
+	// =============== END OF ACTUAL PROGRAM ===================
+	
+	log.destroy_console_logger(context.logger)
+
+	if len(track.allocation_map) > 0 {
+		fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+		for _, entry in track.allocation_map {
+			fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+		}
+	}
+	mem.tracking_allocator_destroy(&track)
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
