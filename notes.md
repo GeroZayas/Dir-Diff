@@ -1,0 +1,60 @@
+## Learning on allocations:
+
+### First: Use always, or often, this tracking allocator piece of code:
+
+This will help find out about the non deallocated memory
+
+```odin
+main :: proc(){
+
+	// Allocations trackers
+	track: mem.Tracking_Allocator
+	mem.tracking_allocator_init(&track, context.allocator)
+	context.allocator = mem.tracking_allocator(&track)
+
+	context.logger = log.create_console_logger()
+
+	// -------------------
+	// PROGRAM HERE ...
+	// -------------------
+	
+	log.destroy_console_logger(context.logger)
+
+	if len(track.allocation_map) > 0 {
+		fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
+		for _, entry in track.allocation_map {
+			fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+		}
+	} else {
+		fmt.println("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
+	}
+	mem.tracking_allocator_destroy(&track)
+}
+```
+
+### Second: delete the created dynamic arrays:
+
+```odin
+	file_names_array : [dynamic]string
+	defer delete(file_names_array) // <---
+
+	// (...)
+
+
+	find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]string){
+	duplicates : [dynamic]string
+	defer delete(duplicates) // <---
+```
+
+
+### Third: put all data in an Arena or similar:
+
+```odin
+get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, arena_alloc: mem.Allocator) -> (DirectoryInfo){
+	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
+	// (...)
+```
+
+Note the `arena_alloc: mem.Allocator` arg and then its use in `os.read_all_directory_by_path(dir_path, arena_alloc)`
+
+
