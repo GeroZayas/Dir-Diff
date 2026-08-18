@@ -16,9 +16,11 @@ import "core:os"
 import "core:strings"
 import "core:mem"
 import "core:log"
+import vmem "core:mem/virtual"
 
 print :: fmt.println
 printf :: fmt.printfln
+
 
 
 // CONSTANTS
@@ -57,15 +59,16 @@ welcome_header :: proc(){
 /*
 Returns an array of strings with the names of all files in the dir & the total amount of files in the dir
 */
-get_array_file_names :: proc(dir_path: string, print_file_names: bool = false) -> (DirectoryInfo){
+get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, arena_alloc: mem.Allocator) -> (DirectoryInfo){
 
-	files_info_array, err := os.read_all_directory_by_path(dir_path, context.allocator)
+	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
 	total_files := len(files_info_array)
 
 	// BASE for name of dir
 	dir_name := os.base(dir_path)
 
 	file_names_array : [dynamic]string
+	defer delete(file_names_array)
 
 	for file in files_info_array {
 		append(&file_names_array, file.name)
@@ -109,13 +112,13 @@ find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (DirectoryInfo) {
 	}
 }
 
-get_paths_dirs :: proc(debug: bool) -> ([2]DirectoryInfo){
-	path1_str : string
-	path2_str : string
+get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> ([2]DirectoryInfo){
+	path1_str := new(string, arena_alloc)
+	path2_str := new(string, arena_alloc)
 	// FOR testing and debugging only:
 	if debug {
-		path1_str = "/Users/gero/Documents/Obsidian-docs/Coding-Books"
-		path2_str = "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
+		path1_str^ = "/Users/gero/Documents/Obsidian-docs/Coding-Books"
+		path2_str^ = "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
 	} else {
 		buffer : [1024]byte
 		// get input from the user
@@ -132,25 +135,28 @@ get_paths_dirs :: proc(debug: bool) -> ([2]DirectoryInfo){
 			fmt.eprintln("ERROR with PATH 2:", err_2)
 			panic("ERROR with PATH 2")
 		}
-		path1_str = string(buffer[:path1])
-		path2_str = string(buffer[path1:path1+path2])
+		path1_str^ = string(buffer[:path1])
+		path2_str^ = string(buffer[path1:path1+path2])
 
-		path1_str = strings.trim_right(path1_str, "\n")
-		path2_str = strings.trim_right(path2_str, "\n")
+		path1_str^ = strings.trim_right(path1_str^, "\n")
+		path2_str^ = strings.trim_right(path2_str^, "\n")
 
 		printf("path1_str ==> : %v", path1_str)
 		printf("path2_str ==> : %v", path2_str)
 	}
 
-	path1_dir: DirectoryInfo = get_array_file_names(path1_str)
-	path2_dir: DirectoryInfo = get_array_file_names(path2_str)
+	path1_dir := new(DirectoryInfo, arena_alloc)
+	path2_dir := new(DirectoryInfo, arena_alloc)
+
+	path1_dir^ = get_array_file_names(path1_str^, arena_alloc = arena_alloc)
+	path2_dir^ = get_array_file_names(path2_str^, arena_alloc = arena_alloc)
 
 	// TODO(gero) Check this in the future: 
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
-	biggest_dir : DirectoryInfo = find_bigger_dir(path1_dir, path2_dir)
-	other_dir : DirectoryInfo = path1_dir if path1_dir.name_dir != biggest_dir.name_dir else path2_dir
+	biggest_dir : DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^)
+	other_dir : DirectoryInfo = path1_dir^ if path1_dir^.name_dir != biggest_dir.name_dir else path2_dir^
 	printf("Biggest DIR: %v", biggest_dir.name_dir)
 	printf("Biggest DIR Path: %v", biggest_dir.path)
 
@@ -158,11 +164,19 @@ get_paths_dirs :: proc(debug: bool) -> ([2]DirectoryInfo){
 }
 
 find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]string){
+	// TODO(gero): Measure mathematically which one is better, or if it is the same exactly:
+	// 1st for loop the dir with more files, 2nd loop dir with fewer, OR the other way around
+
 	// Dir A has to be the dir with the most files 
 	duplicates : [dynamic]string
+	defer delete(duplicates)
 
-	for file_i in dir_a.file_names_array {
-		for file_j in dir_b.file_names_array {
+	more_files_dir_array := dir_a.file_names_array
+	fewer_files_dir_array := dir_b.file_names_array
+
+	// NOTE: we are gonna loop over the fewer files dir - outer loop, more dirs - inner loop
+	for file_i in fewer_files_dir_array {
+		for file_j in more_files_dir_array {
 			if file_i == file_j {
 				append(&duplicates, file_i)
 			}
@@ -173,11 +187,16 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]st
 }
 
 
-
 // MAIN - ENTRY POINT 
 // ==================
 
 main :: proc(){
+
+	// ARENA LOGIC
+	arena: vmem.Arena
+	arena_err := vmem.arena_init_growing(&arena)
+	ensure(arena_err == nil)
+	arena_alloc: mem.Allocator = vmem.arena_allocator(&arena)
 
 	// Allocations trackers
 	track: mem.Tracking_Allocator
@@ -190,7 +209,7 @@ main :: proc(){
 
 	welcome_header()
 	// if get_paths_dirs(true) <- true means hardcoded paths for testing. MAKE IT FALSE when for real
-	dirs := get_paths_dirs(true)
+	dirs := get_paths_dirs(true, arena_alloc)
 	biggest_dir, other_dir := dirs[0], dirs[1]
 	duplicates := find_duplicates_in_two_dirs(biggest_dir, other_dir)
 
@@ -203,6 +222,18 @@ main :: proc(){
 	}
 	print("========================================")
 
+	// NOTES:
+	// we have to know which FILES are in both dirs. 
+
+	// TODO(gero)
+	// 1) Ask the user what to do with the duplicates
+	// OPTIONS: a) delete all duplicates from a selected dir, by default the one with more files
+	//          b) move all those files to a brand new dir
+	//          c) Do nothing - just put the results in a txt or md file if user wants that
+	// 2) 
+	// 3)
+	// 4) Write tests (do not be lazy, Gero)
+
 
 	// =============== END OF ACTUAL PROGRAM ===================
 	
@@ -213,6 +244,8 @@ main :: proc(){
 		for _, entry in track.allocation_map {
 			fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
 		}
+	} else {
+		fmt.println("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
 	}
 	mem.tracking_allocator_destroy(&track)
 }
