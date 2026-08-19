@@ -55,6 +55,29 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, a
 	// (...)
 ```
 
-Note the `arena_alloc: mem.Allocator` arg and then its use in `os.read_all_directory_by_path(dir_path, arena_alloc)`
+Note the `arena_alloc: mem.Allocator` arg and then its use in `os.read_all_directory_by_path(dir_path, arena_alloc)`.
+Then you just have to free the whole arena: `free_all(arena_alloc)` and that's it!
+
+
+### Fourth: Careful with input gotten in a proc -> make sure you clone it from the buffer:
+
+For example, here if you don't clone from the bytes of the buffer to a string, you will lose the contents after leaving the scope of the procedure, and you'll find yourself without the expected input string:
+
+```odin
+get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
+	buffer: [256]byte
+	user_input, input_err := os.read(os.stdin, buffer[:])
+	assert(input_err == nil)
+	user_input_str := strings.clone_from_bytes(buffer[:user_input], arena_alloc)
+	return user_input_str
+}
+```
+
+Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and also note how we allocate to the arena we create it. We're putting everything in the same arena in this case.
+
+
+
+
+
 
 

@@ -12,15 +12,15 @@ Another way is to do set logic
 package dir_diff
 
 import "core:fmt"
+import "core:log"
+import "core:mem"
+import vmem "core:mem/virtual"
 import "core:os"
 import "core:strings"
-import "core:mem"
-import "core:log"
-import vmem "core:mem/virtual"
+import rl "vendor:raylib"
 
 print :: fmt.println
 printf :: fmt.printfln
-
 
 
 // CONSTANTS
@@ -36,18 +36,17 @@ RED := "\e[0;91m"
 // =========
 
 DirectoryInfo :: struct {
-	name_dir: string,
-	path: string,
-	total_files: int,
-	file_names_array : [dynamic]string
+	name_dir:         string,
+	path:             string,
+	total_files:      int,
+	file_names_array: [dynamic]string,
 }
-
 
 
 // PROCEDURES
 // ===========
 
-welcome_header :: proc(){
+welcome_header :: proc() {
 	print("")
 	printf("%v          ====================%v", RED, RESET)
 	printf("%v          ||||  DIR DIFF  ||||%v", BOLD_YELLOW, RESET)
@@ -59,7 +58,11 @@ welcome_header :: proc(){
 /*
 Returns an array of strings with the names of all files in the dir & the total amount of files in the dir
 */
-get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, arena_alloc: mem.Allocator) -> (DirectoryInfo){
+get_array_file_names :: proc(
+	dir_path: string,
+	print_file_names: bool = false,
+	arena_alloc: mem.Allocator,
+) -> DirectoryInfo {
 
 	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
 	total_files := len(files_info_array)
@@ -67,7 +70,7 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, a
 	// BASE for name of dir
 	dir_name := os.base(dir_path)
 
-	file_names_array : [dynamic]string
+	file_names_array: [dynamic]string
 	defer delete(file_names_array)
 
 	for file in files_info_array {
@@ -81,38 +84,38 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, a
 		}
 	}
 
-	dir_info := DirectoryInfo{
-		name_dir = dir_name,
-		total_files = total_files,
+	dir_info := DirectoryInfo {
+		name_dir         = dir_name,
+		total_files      = total_files,
 		file_names_array = file_names_array,
-		path = dir_path
+		path             = dir_path,
 	}
 
 	return dir_info
 
 }
 
-find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo ) -> (DirectoryInfo) {
+find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo) -> DirectoryInfo {
 
 	a := dir_a.total_files
 	b := dir_b.total_files
 
 	res := "The Dir with the most files is: "
 	defer delete(res)
-	
+
 	if a >= b {
 		res = strings.concatenate({res, dir_a.name_dir})
-		
-		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files,RESET)
+
+		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files, RESET)
 		return dir_a
 	} else {
 		res = strings.concatenate({res, dir_b.name_dir})
-		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files,RESET)
+		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files, RESET)
 		return dir_b
 	}
 }
 
-get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> ([2]DirectoryInfo){
+get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryInfo {
 	path1_str := new(string, arena_alloc)
 	path2_str := new(string, arena_alloc)
 	// FOR testing and debugging only:
@@ -120,7 +123,7 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> ([2]Directory
 		path1_str^ = "/Users/gero/Documents/Obsidian-docs/Coding-Books"
 		path2_str^ = "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
 	} else {
-		buffer : [1024]byte
+		buffer: [1024]byte
 		// get input from the user
 		print("Insert DIR 1 path: ")
 		path1, err_1 := os.read(os.stdin, buffer[:])
@@ -130,13 +133,13 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> ([2]Directory
 		}
 
 		print("Insert DIR 2 path: ")
-	 	path2, err_2 := os.read(os.stdin, buffer[path1:])
+		path2, err_2 := os.read(os.stdin, buffer[path1:])
 		if err_2 != nil {
 			fmt.eprintln("ERROR with PATH 2:", err_2)
 			panic("ERROR with PATH 2")
 		}
 		path1_str^ = string(buffer[:path1])
-		path2_str^ = string(buffer[path1:path1+path2])
+		path2_str^ = string(buffer[path1:path1 + path2])
 
 		path1_str^ = strings.trim_right(path1_str^, "\n")
 		path2_str^ = strings.trim_right(path2_str^, "\n")
@@ -151,24 +154,25 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> ([2]Directory
 	path1_dir^ = get_array_file_names(path1_str^, arena_alloc = arena_alloc)
 	path2_dir^ = get_array_file_names(path2_str^, arena_alloc = arena_alloc)
 
-	// TODO(gero) Check this in the future: 
+	// TODO(gero) Check this in the future:
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
-	biggest_dir : DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^)
-	other_dir : DirectoryInfo = path1_dir^ if path1_dir^.name_dir != biggest_dir.name_dir else path2_dir^
+	biggest_dir: DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^)
+	other_dir: DirectoryInfo =
+		path1_dir^ if path1_dir^.name_dir != biggest_dir.name_dir else path2_dir^
 	printf("Biggest DIR: %v", biggest_dir.name_dir)
 	printf("Biggest DIR Path: %v", biggest_dir.path)
 
 	return {biggest_dir, other_dir}
 }
 
-find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]string){
+find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> [dynamic]string {
 	// TODO(gero): Measure mathematically which one is better, or if it is the same exactly:
 	// 1st for loop the dir with more files, 2nd loop dir with fewer, OR the other way around
 
-	// Dir A has to be the dir with the most files 
-	duplicates : [dynamic]string
+	// Dir A has to be the dir with the most files
+	duplicates: [dynamic]string
 	defer delete(duplicates)
 
 	more_files_dir_array := dir_a.file_names_array
@@ -186,11 +190,18 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> ([dynamic]st
 	return duplicates
 }
 
+get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
+	buffer: [256]byte
+	user_input, input_err := os.read(os.stdin, buffer[:])
+	assert(input_err == nil)
+	user_input_str := strings.clone_from_bytes(buffer[:user_input], arena_alloc)
+	return user_input_str
+}
 
-// MAIN - ENTRY POINT 
+// MAIN - ENTRY POINT
 // ==================
 
-main :: proc(){
+main :: proc() {
 
 	// ARENA LOGIC
 	arena: vmem.Arena
@@ -209,7 +220,28 @@ main :: proc(){
 
 	welcome_header()
 	// if get_paths_dirs(true) <- true means hardcoded paths for testing. MAKE IT FALSE when for real
-	dirs := get_paths_dirs(true, arena_alloc)
+
+	str1 := " Default is DEBUG -> hardcoded dirs' paths "
+	str1 = strings.centre_justify(str1, 100, "=", allocator = arena_alloc)
+	str2 := " Type `Y` for DEBUG `N` to type in the dirs' paths (Hit `ENTER` for default): "
+	str2 = strings.centre_justify(str2, 100, "=", allocator = arena_alloc)
+	print(str1)
+	print(str2)
+
+	user_input := get_user_input(arena_alloc)
+	user_input = strings.trim_right(strings.to_lower(user_input), "\n") // note you have to trim it
+
+	DEBUG: bool
+	if user_input == "y" {
+		DEBUG = true
+	} else if user_input == "n" {
+		DEBUG = false
+	}
+
+	printf("DEBUG IS %v", DEBUG)
+
+	// TODO(gero) take this /* */ comment marks out:
+	dirs := get_paths_dirs(DEBUG, arena_alloc)
 	biggest_dir, other_dir := dirs[0], dirs[1]
 	duplicates := find_duplicates_in_two_dirs(biggest_dir, other_dir)
 
@@ -218,25 +250,31 @@ main :: proc(){
 	printf("TOTAL: %i", len(duplicates))
 	print("========================================")
 	for dup, index in duplicates {
-		printf("%i ==> %s", index + 1, dup)
+		if dup != "" {
+			printf("%i ==> %s", index + 1, dup)
+		}
 	}
 	print("========================================")
 
 	// NOTES:
-	// we have to know which FILES are in both dirs. 
+	// we have to know which FILES are in both dirs.
 
 	// TODO(gero)
 	// 1) Ask the user what to do with the duplicates
 	// OPTIONS: a) delete all duplicates from a selected dir, by default the one with more files
 	//          b) move all those files to a brand new dir
 	//          c) Do nothing - just put the results in a txt or md file if user wants that
-	// 2) 
+	// 2)
 	// 3)
 	// 4) Write tests (do not be lazy, Gero)
 
 
 	// =============== END OF ACTUAL PROGRAM ===================
-	
+
+	delete(user_input)
+
+	free_all(arena_alloc)
+
 	log.destroy_console_logger(context.logger)
 
 	if len(track.allocation_map) > 0 {
@@ -248,17 +286,5 @@ main :: proc(){
 		fmt.println("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
 	}
 	mem.tracking_allocator_destroy(&track)
+
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
