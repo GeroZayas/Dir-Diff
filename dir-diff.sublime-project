@@ -19,5 +19,16 @@
 		{
 			"path": "/Users/gero/Documents/Coding/Odin-Programs/Odin-Examples-Repo/examples"
 		}
-	]
+	],
+	"settings":
+	{
+		"auto_complete": false,
+		"LSP":
+		{
+			"odin":
+			{
+				"enabled": true,
+			},
+		},
+	}
 }
