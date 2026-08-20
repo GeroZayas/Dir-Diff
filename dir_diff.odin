@@ -95,21 +95,17 @@ get_array_file_names :: proc(
 
 }
 
-find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo) -> DirectoryInfo {
-
-	a := dir_a.total_files
-	b := dir_b.total_files
+find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo, allocator: mem.Allocator) -> DirectoryInfo {
 
 	res := "The Dir with the most files is: "
-	defer delete(res)
 
-	if a >= b {
-		res = strings.concatenate({res, dir_a.name_dir})
+	if dir_a.total_files >= dir_b.total_files {
+		res = strings.concatenate({res, dir_a.name_dir}, allocator = allocator)
 
 		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files, RESET)
 		return dir_a
 	} else {
-		res = strings.concatenate({res, dir_b.name_dir})
+		res = strings.concatenate({res, dir_b.name_dir}, allocator = allocator)
 		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files, RESET)
 		return dir_b
 	}
@@ -158,7 +154,7 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
-	biggest_dir: DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^)
+	biggest_dir: DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^, allocator = arena_alloc)
 	other_dir: DirectoryInfo =
 		path1_dir^ if path1_dir^.name_dir != biggest_dir.name_dir else path2_dir^
 	printf("Biggest DIR: %v", biggest_dir.name_dir)
@@ -190,12 +186,19 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> [dynamic]str
 	return duplicates
 }
 
-get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
+get_user_input :: proc(prompt_message: string, allocator: mem.Allocator) -> string {
+	print(prompt_message)
 	buffer: [256]byte
 	user_input, input_err := os.read(os.stdin, buffer[:])
 	assert(input_err == nil)
-	user_input_str := strings.clone_from_bytes(buffer[:user_input], arena_alloc)
+	user_input_str := strings.clone_from_bytes(buffer[:user_input], allocator)
 	return user_input_str
+}
+
+
+clean_user_input :: proc(user_input: string, allocator: mem.Allocator) -> string {
+	res := strings.trim_right(strings.to_lower(user_input, allocator), "\n") // note you have to trim it
+	return res
 }
 
 // MAIN - ENTRY POINT
@@ -225,11 +228,11 @@ main :: proc() {
 	str1 = strings.centre_justify(str1, 100, "=", allocator = arena_alloc)
 	str2 := " Type `Y` for DEBUG `N` to type in the dirs' paths (Hit `ENTER` for default): "
 	str2 = strings.centre_justify(str2, 100, "=", allocator = arena_alloc)
-	print(str1)
-	print(str2)
 
-	user_input := get_user_input(arena_alloc)
-	user_input = strings.trim_right(strings.to_lower(user_input), "\n") // note you have to trim it
+	prompt := strings.concatenate({str1, "\n", str2}, allocator = arena_alloc)
+
+	user_input := get_user_input(prompt_message = prompt, allocator = arena_alloc)
+	user_input = clean_user_input(user_input, arena_alloc)
 
 	DEBUG: bool
 	if user_input == "y" {
@@ -256,6 +259,23 @@ main :: proc() {
 	}
 	print("========================================")
 
+	prompt = `
+	>> INPUT 'm' to move these duplicates to new a new dir
+	>> INPUT 'd' to delete all these duplicate files
+	`
+	user_input = get_user_input(prompt_message = prompt, allocator = arena_alloc)
+	user_input = clean_user_input(user_input, arena_alloc)
+
+	switch user_input {
+	case "m":
+		printf("%vYOU HAVE SELECTED: MOVE FILES%v", BOLD_YELLOW, RESET)
+	case "d":
+		printf("%vYOU HAVE SELECTED: MOVE FILES%v", RED, RESET)
+	case:
+		print("UNKNOWN COMMAND")
+	}
+
+
 	// NOTES:
 	// we have to know which FILES are in both dirs.
 
@@ -270,9 +290,6 @@ main :: proc() {
 
 
 	// =============== END OF ACTUAL PROGRAM ===================
-
-	delete(user_input)
-
 	free_all(arena_alloc)
 
 	log.destroy_console_logger(context.logger)
