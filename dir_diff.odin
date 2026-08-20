@@ -58,7 +58,7 @@ welcome_header :: proc() {
 }
 
 /*
-Returns an array of strings with the names of all files in the dir & the total amount of files in the dir
+Returns a DirectoryInfo struct
 */
 get_array_file_names :: proc(
 	dir_path: string,
@@ -86,11 +86,14 @@ get_array_file_names :: proc(
 		}
 	}
 
+	abs_path, _ := os.get_absolute_path(dir_path, arena_alloc)
+	log.debug("ABS PATH >>>>>>>>>>>", abs_path)
+
 	dir_info := DirectoryInfo {
 		name_dir         = dir_name,
 		total_files      = total_files,
 		file_names_array = file_names_array,
-		path             = dir_path,
+		path             = abs_path,
 	}
 
 	return dir_info
@@ -141,9 +144,6 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 
 		path1_str^ = strings.trim_right(path1_str^, "\n")
 		path2_str^ = strings.trim_right(path2_str^, "\n")
-
-		printf("path1_str ==> : %v", path1_str)
-		printf("path2_str ==> : %v", path2_str)
 	}
 
 	path1_dir := new(DirectoryInfo, arena_alloc)
@@ -262,7 +262,7 @@ main :: proc() {
 	print("========================================")
 
 	prompt = `
-	>> INPUT 'm' to move these duplicates to new a new dir
+	>> INPUT 'm' to move these duplicates to new a new dir called "duplicates"
 	>> INPUT 'd' to delete all these duplicate files
 	`
 	user_input = get_user_input(prompt_message = prompt, allocator = arena_alloc)
@@ -319,13 +319,25 @@ main :: proc() {
 			printf("%v\n============================= %v", HIGH_BLUE, RESET)
 
 
-
 		} else {
 			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", RED, RESET)
 		}
 
 	case "d":
-		printf("%vYOU HAVE SELECTED: MOVE FILES%v", RED, RESET)
+		printf("%vYOU HAVE SELECTED: DELETE FILES%v", RED, RESET)
+		// TODO we want to copy all the duplicate files into the new path
+		for dup, index in duplicates {
+			if dup != "" {
+
+				printf("DELETING %i - %s", index + 1, dup)
+				source := strings.concatenate({biggest_dir.path, "/", dup}, arena_alloc)
+				rm_err := os.remove(name = source)
+				if rm_err != nil {
+					log.error("REMOVE ERROR= ", rm_err)
+				}
+
+			}
+		}
 	case:
 		print("UNKNOWN COMMAND")
 	}

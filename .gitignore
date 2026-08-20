@@ -8,7 +8,7 @@ debug_build-main_odin.dSYM/*
 dir_diff
 dir-diff
 dir-diff.dSYM/*
-
+debug_build-main_odin.dSYM
 ### macOS ###
 # General
 .DS_Store
@@ -82,3 +82,5 @@ bh_unicode_properties.cache
 GitHub.sublime-settings
 
 # End of https://www.toptal.com/developers/gitignore/api/sublimetext
+bar/
+foo/
