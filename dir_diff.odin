@@ -269,6 +269,20 @@ main :: proc() {
 	switch user_input {
 	case "m":
 		printf("%vYOU HAVE SELECTED: MOVE FILES%v", BOLD_YELLOW, RESET)
+		printf("This will move the duplicates files from >> %v << to a new dir called `duplicates`", biggest_dir.name_dir)
+		printf("In the PARENT path of >> %v <<", biggest_dir.path)
+		prompt = `
+		>> Type "y" to confirm, "n" to cancel
+		`
+		move_user_input := get_user_input(prompt_message = prompt, allocator = arena_alloc)
+		move_user_input = clean_user_input(move_user_input, arena_alloc)
+		if move_user_input == "y" {
+			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", BOLD_YELLOW, RESET)
+
+		} else {
+			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", RED, RESET)
+		}
+
 	case "d":
 		printf("%vYOU HAVE SELECTED: MOVE FILES%v", RED, RESET)
 	case:
