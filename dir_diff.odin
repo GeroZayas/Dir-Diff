@@ -5,6 +5,8 @@
 - loop over each file, compare if found in array of files of other dir
 - when matched, save name to common files array
 
+- It would be great to have something that tells us which copy of the duplicates, was modifed the latest
+
 Another way is to do set logic
 
 */
@@ -269,7 +271,10 @@ main :: proc() {
 	switch user_input {
 	case "m":
 		printf("%vYOU HAVE SELECTED: MOVE FILES%v", BOLD_YELLOW, RESET)
-		printf("This will move the duplicates files from >> %v << to a new dir called `duplicates`", biggest_dir.name_dir)
+		printf(
+			"This will move the duplicates files from >> %v << to a new dir called `duplicates`",
+			biggest_dir.name_dir,
+		)
 		printf("In the PARENT path of >> %v <<", biggest_dir.path)
 		prompt = `
 		>> Type "y" to confirm, "n" to cancel
@@ -278,6 +283,42 @@ main :: proc() {
 		move_user_input = clean_user_input(move_user_input, arena_alloc)
 		if move_user_input == "y" {
 			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", BOLD_YELLOW, RESET)
+			new_path := strings.concatenate({biggest_dir.path, "/duplicates"}, arena_alloc)
+			log.debug("NEW PATH:", new_path)
+
+			// if the DIR does not exist already, we create one else, just jump to the next part
+			if !os.is_dir(new_path) {
+				mkdir_err := os.make_directory(new_path)
+				if mkdir_err != nil {
+					fmt.eprintfln("ERROR %v", mkdir_err)
+				}
+			}
+
+			// TODO we want to copy all the duplicate files into the new path
+			for dup, index in duplicates {
+				if dup != "" {
+					// log.debug(dup)
+					printf("COPYING %i - %s", index + 1, dup)
+					source := strings.concatenate({biggest_dir.path, "/", dup}, arena_alloc)
+					destination := strings.concatenate({new_path, "/", dup}, arena_alloc)
+					// log.debug("SOURCE= ", source) // could be EISDIR :: _Platform_Error.EISDIR
+					// log.debug("DESTINATION= ", destination)
+					c_err := os.copy_file(dst_path = destination, src_path = source)
+					if c_err != nil {
+						log.error("COPY ERROR= ", c_err)
+					}
+					rm_err := os.remove(name = source)
+					if rm_err != nil {
+						log.error("REMOVE ERROR= ", c_err)
+					}
+
+				}
+			}
+			printf("%v\n============================= %v", HIGH_BLUE, RESET)
+			printf("%v\nDONE DONE DONE %v", HIGH_BLUE, RESET)
+			printf("%v\n============================= %v", HIGH_BLUE, RESET)
+
+
 
 		} else {
 			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", RED, RESET)
