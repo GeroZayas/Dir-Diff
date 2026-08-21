@@ -84,3 +84,6 @@ GitHub.sublime-settings
 # End of https://www.toptal.com/developers/gitignore/api/sublimetext
 bar/
 foo/
+debug_build-dir_diff_odin
+debug_build-dir_diff_odin.dSYM/Contents/Info.plist
+debug_build-dir_diff_odin.dSYM/Contents/Resources/Relocations/aarch64/debug_build-dir_diff_odin.yml

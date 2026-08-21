@@ -18,6 +18,7 @@ import "core:log"
 import "core:mem"
 import vmem "core:mem/virtual"
 import "core:os"
+import "core:path/filepath"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -41,7 +42,7 @@ DirectoryInfo :: struct {
 	name_dir:         string,
 	path:             string,
 	total_files:      int,
-	file_names_array: [dynamic]string,
+	files_array: [dynamic]os.File_Info,
 }
 
 
@@ -60,62 +61,62 @@ welcome_header :: proc() {
 /*
 Returns a DirectoryInfo struct
 */
-get_array_file_names :: proc(
-	dir_path: string,
-	print_file_names: bool = false,
-	arena_alloc: mem.Allocator,
-) -> DirectoryInfo {
-
+get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, arena_alloc: mem.Allocator) -> DirectoryInfo {
 	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
-	total_files := len(files_info_array)
+
+	files_array := make([dynamic]os.File_Info, arena_alloc)
+
+	for elem in files_info_array {
+		if elem.type == .Directory {
+			continue
+		}
+		append(&files_array, elem)
+	}
+
+	total_files := len(files_array)
 
 	// BASE for name of dir
 	dir_name := os.base(dir_path)
 
-	file_names_array: [dynamic]string
-	defer delete(file_names_array)
-
-	for file in files_info_array {
-		append(&file_names_array, file.name)
-	}
-
 	if print_file_names {
-		for name in file_names_array {
+		for file in files_array {
 			print("=============================")
-			print(name)
+			print(file.name)
 		}
 	}
 
 	abs_path, _ := os.get_absolute_path(dir_path, arena_alloc)
-	log.debug("ABS PATH >>>>>>>>>>>", abs_path)
 
 	dir_info := DirectoryInfo {
-		name_dir         = dir_name,
-		total_files      = total_files,
-		file_names_array = file_names_array,
-		path             = abs_path,
+		name_dir        = dir_name,
+		total_files     = total_files,
+		files_array 	= files_array,
+		path            = abs_path,
 	}
 
 	return dir_info
 
 }
 
-find_bigger_dir :: proc(dir_a, dir_b: DirectoryInfo, allocator: mem.Allocator) -> DirectoryInfo {
+return_big_then_small_dir :: proc(dir_a, dir_b: DirectoryInfo, allocator: mem.Allocator) -> [2]DirectoryInfo {
 
-	res := "The Dir with the most files is: "
+	res := "The directory with more files is: "
 
 	if dir_a.total_files >= dir_b.total_files {
 		res = strings.concatenate({res, dir_a.name_dir}, allocator = allocator)
 
 		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files, RESET)
-		return dir_a
+		return {dir_a, dir_b}
 	} else {
 		res = strings.concatenate({res, dir_b.name_dir}, allocator = allocator)
 		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files, RESET)
-		return dir_b
+		return {dir_b, dir_a}
 	}
 }
 
+/*
+Returns a [2]DirectoryInfo with the info from the dirs given as input paths
+*/
 get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryInfo {
 	path1_str := new(string, arena_alloc)
 	path2_str := new(string, arena_alloc)
@@ -126,24 +127,27 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 	} else {
 		buffer: [1024]byte
 		// get input from the user
-		print("Insert DIR 1 path: ")
+		print("Insert DIR 1 FULL PATH: ")
 		path1, err_1 := os.read(os.stdin, buffer[:])
 		if err_1 != nil {
 			fmt.eprintln("ERROR with PATH 1:", err_1)
 			panic("ERROR with PATH 1")
 		}
+		path1_str^ = string(buffer[:path1])
+		path1_str^ = strings.trim_right(path1_str^, "\n")
+		if !os.is_directory(path1_str^) {
+			print(path1_str^, "is not a DIRECTORY")
+		}
 
-		print("Insert DIR 2 path: ")
+		print("Insert DIR 2 FULL PATH: ")
 		path2, err_2 := os.read(os.stdin, buffer[path1:])
 		if err_2 != nil {
 			fmt.eprintln("ERROR with PATH 2:", err_2)
 			panic("ERROR with PATH 2")
 		}
-		path1_str^ = string(buffer[:path1])
 		path2_str^ = string(buffer[path1:path1 + path2])
-
-		path1_str^ = strings.trim_right(path1_str^, "\n")
 		path2_str^ = strings.trim_right(path2_str^, "\n")
+		assert(os.is_directory(path2_str^), "PATH is not a directory")
 	}
 
 	path1_dir := new(DirectoryInfo, arena_alloc)
@@ -156,31 +160,31 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
-	biggest_dir: DirectoryInfo = find_bigger_dir(path1_dir^, path2_dir^, allocator = arena_alloc)
-	other_dir: DirectoryInfo =
-		path1_dir^ if path1_dir^.name_dir != biggest_dir.name_dir else path2_dir^
-	printf("Biggest DIR: %v", biggest_dir.name_dir)
-	printf("Biggest DIR Path: %v", biggest_dir.path)
+	big_then_small_dirs_array: [2]DirectoryInfo = return_big_then_small_dir(path1_dir^, path2_dir^, allocator = arena_alloc)
+	printf("Biggest DIR: %v", big_then_small_dirs_array[0].name_dir)
+	printf("Biggest DIR Path: %v", big_then_small_dirs_array[0].path)
 
-	return {biggest_dir, other_dir}
+	return big_then_small_dirs_array
 }
 
-find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo) -> [dynamic]string {
+find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo, alloc: mem.Allocator) -> [dynamic]string {
 	// TODO(gero): Measure mathematically which one is better, or if it is the same exactly:
 	// 1st for loop the dir with more files, 2nd loop dir with fewer, OR the other way around
 
 	// Dir A has to be the dir with the most files
-	duplicates: [dynamic]string
-	defer delete(duplicates)
+	duplicates := make([dynamic]string, alloc)
 
-	more_files_dir_array := dir_a.file_names_array
-	fewer_files_dir_array := dir_b.file_names_array
+	more_files_dir_array := dir_a.files_array
+	fewer_files_dir_array := dir_b.files_array
 
 	// NOTE: we are gonna loop over the fewer files dir - outer loop, more dirs - inner loop
 	for file_i in fewer_files_dir_array {
+		log.debug("file_i in fewer_files_dir_array ", file_i)
 		for file_j in more_files_dir_array {
-			if file_i == file_j {
-				append(&duplicates, file_i)
+			log.debug("file_j in more_files_dir_array ", file_j)
+			if file_i.name == file_j.name {
+				log.debug("file_i == file_j", file_i.name == file_j.name)
+				append(&duplicates, file_i.name)
 			}
 		}
 	}
@@ -202,6 +206,20 @@ clean_user_input :: proc(user_input: string, allocator: mem.Allocator) -> string
 	res := strings.trim_right(strings.to_lower(user_input, allocator), "\n") // note you have to trim it
 	return res
 }
+
+print_all_duplicates :: proc(dups: [dynamic]string) {
+	print("DUPLICATES ARE:")
+	print("========================================")
+	printf("TOTAL: %i", len(dups))
+	print("========================================")
+	for dup, index in dups {
+		if dup != "" {
+			printf("%i ==> %s", index + 1, dup)
+		}
+	}
+	print("========================================")
+}
+
 
 // MAIN - ENTRY POINT
 // ==================
@@ -246,20 +264,19 @@ main :: proc() {
 	printf("DEBUG IS %v", DEBUG)
 
 	// TODO(gero) take this /* */ comment marks out:
-	dirs := get_paths_dirs(DEBUG, arena_alloc)
-	biggest_dir, other_dir := dirs[0], dirs[1]
-	duplicates := find_duplicates_in_two_dirs(biggest_dir, other_dir)
+	big_then_small_dirs_array: [2]DirectoryInfo = get_paths_dirs(DEBUG, arena_alloc)
 
-	print("DUPLICATES ARE:")
-	print("========================================")
-	printf("TOTAL: %i", len(duplicates))
-	print("========================================")
-	for dup, index in duplicates {
-		if dup != "" {
-			printf("%i ==> %s", index + 1, dup)
-		}
+	big_dir, small_dir := big_then_small_dirs_array[0], big_then_small_dirs_array[1]
+
+	duplicates := find_duplicates_in_two_dirs(big_dir, small_dir, arena_alloc)
+
+	exist_duplicates: bool = len(duplicates) > 0
+
+	log.debug("exist_duplicates", exist_duplicates)
+
+	if exist_duplicates {
+		print_all_duplicates(duplicates)
 	}
-	print("========================================")
 
 	prompt = `
 	>> INPUT 'm' to move these duplicates to new a new dir called "duplicates"
@@ -273,9 +290,9 @@ main :: proc() {
 		printf("%vYOU HAVE SELECTED: MOVE FILES%v", BOLD_YELLOW, RESET)
 		printf(
 			"This will move the duplicates files from >> %v << to a new dir called `duplicates`",
-			biggest_dir.name_dir,
+			big_dir.path,
 		)
-		printf("In the PARENT path of >> %v <<", biggest_dir.path)
+		printf("In the PARENT path of >> %v <<", big_dir.path)
 		prompt = `
 		>> Type "y" to confirm, "n" to cancel
 		`
@@ -283,9 +300,10 @@ main :: proc() {
 		move_user_input = clean_user_input(move_user_input, arena_alloc)
 		if move_user_input == "y" {
 			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", BOLD_YELLOW, RESET)
-			new_path := strings.concatenate({biggest_dir.path, "/duplicates"}, arena_alloc)
-			log.debug("NEW PATH:", new_path)
-
+			new_path, np_err := filepath.join({big_dir.path, "duplicates"}, arena_alloc)
+			if np_err != nil {
+				fmt.eprintln("NEW PATH ERROR", np_err)
+			}
 			// if the DIR does not exist already, we create one else, just jump to the next part
 			if !os.is_dir(new_path) {
 				mkdir_err := os.make_directory(new_path)
@@ -299,7 +317,7 @@ main :: proc() {
 				if dup != "" {
 					// log.debug(dup)
 					printf("COPYING %i - %s", index + 1, dup)
-					source := strings.concatenate({biggest_dir.path, "/", dup}, arena_alloc)
+					source := strings.concatenate({big_dir.path, "/", dup}, arena_alloc)
 					destination := strings.concatenate({new_path, "/", dup}, arena_alloc)
 					// log.debug("SOURCE= ", source) // could be EISDIR :: _Platform_Error.EISDIR
 					// log.debug("DESTINATION= ", destination)
@@ -330,7 +348,7 @@ main :: proc() {
 			if dup != "" {
 
 				printf("DELETING %i - %s", index + 1, dup)
-				source := strings.concatenate({biggest_dir.path, "/", dup}, arena_alloc)
+				source := strings.concatenate({big_dir.path, "/", dup}, arena_alloc)
 				rm_err := os.remove(name = source)
 				if rm_err != nil {
 					log.error("REMOVE ERROR= ", rm_err)
