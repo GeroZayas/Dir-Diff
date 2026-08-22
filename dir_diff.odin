@@ -1,13 +1,5 @@
 /*
-- get all files from dir 1, and dir 2
-- common files array
-- take the dir with more files
-- loop over each file, compare if found in array of files of other dir
-- when matched, save name to common files array
-
-- It would be great to have something that tells us which copy of the duplicates, was modifed the latest
-
-Another way is to do set logic
+Improve the algorithm of checking for duplicates, have a seen-already array
 
 */
 
