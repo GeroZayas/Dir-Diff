@@ -12,7 +12,6 @@ import vmem "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
-import rl "vendor:raylib"
 
 print :: fmt.println
 printf :: fmt.printfln
