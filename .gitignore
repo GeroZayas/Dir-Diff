@@ -87,3 +87,7 @@ foo/
 debug_build-dir_diff_odin
 debug_build-dir_diff_odin.dSYM/Contents/Info.plist
 debug_build-dir_diff_odin.dSYM/Contents/Resources/Relocations/aarch64/debug_build-dir_diff_odin.yml
+debug_build-dir_diff_odin.dSYM/Contents/
+foo-bar.zip
+help.txt
+inner-notes-gero.md

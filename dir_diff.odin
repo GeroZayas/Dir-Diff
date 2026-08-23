@@ -2,6 +2,18 @@
 * Improve the algorithm of checking for duplicates, have a seen-already array
 * Have a way to measure it (time)
 
+User Story:
+
+The user opens the program.
+They are presented with what the program does.
+The user inserts the paths of the two dirs to compare.
+The user gets a table [?] with the info about both dirs, what files are duplicates if any.
+If there are duplicates, the program shows which version was more recently modified.
+The program shows options.
+Take out all of the duplicates from one of the Dirs and put it in a dir called `duplicates` by default,
+or the user inserts name of dir.
+The user can select which version to keep from either file, or based on more or less recently modified.
+The program presents the results.
 */
 
 package dir_diff
@@ -14,6 +26,7 @@ import "core:os"
 import "core:path/filepath"
 import "core:strings"
 import "core:time"
+import "./visuals"
 
 print :: fmt.println
 printf :: fmt.printfln
@@ -44,10 +57,10 @@ DirectoryInfo :: struct {
 
 welcome_header :: proc() {
 	print("")
-	printf("%v          ====================%v", RED, RESET)
-	printf("%v          ||||  DIR DIFF  ||||%v", BOLD_YELLOW, RESET)
-	printf("%v          ====================%v", RED, RESET)
-	printf("%vWelcome! Insert the paths of the two dirs to compare:%v", HIGH_BLUE, RESET)
+	printf("%v          ====================%v", visuals.BOLD_RED, visuals.RESET)
+	printf("%v          ||||  DIR DIFF  ||||%v", visuals.BOLD_YELLOW, visuals.RESET)
+	printf("%v          ====================%v", visuals.BOLD_RED, visuals.RESET)
+	printf("%vWelcome! Insert the paths of the two dirs to compare:%v", visuals.BOLD_BLUE, visuals.RESET)
 	print("")
 }
 
@@ -98,11 +111,11 @@ return_big_then_small_dir :: proc(dir_a, dir_b: DirectoryInfo, allocator: mem.Al
 	if dir_a.total_files >= dir_b.total_files {
 		res = strings.concatenate({res, dir_a.name_dir}, allocator = allocator)
 
-		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_a.total_files, RESET)
+		printf("%v%v with %v files %v", visuals.BOLD_YELLOW, res, dir_a.total_files, visuals.RESET)
 		return {dir_a, dir_b}
 	} else {
 		res = strings.concatenate({res, dir_b.name_dir}, allocator = allocator)
-		printf("%v%v with %v files %v", BOLD_YELLOW, res, dir_b.total_files, RESET)
+		printf("%v%v with %v files %v", visuals.BOLD_YELLOW, res, dir_b.total_files, visuals.RESET)
 		return {dir_b, dir_a}
 	}
 }
@@ -247,8 +260,9 @@ main :: proc() {
 	context.logger = log.create_console_logger()
 
 	// =============== START OF ACTUAL PROGRAM ===================
-
-	welcome_header()
+	title := " WELCOME to DIR DIFF "
+	visuals.title(title, line_color="yellow", text_color="blue")
+	// welcome_header()
 	// if get_paths_dirs(true) <- true means hardcoded paths for testing. MAKE IT FALSE when for real
 
 	str1 := " Default is DEBUG -> hardcoded dirs' paths "
@@ -294,7 +308,7 @@ main :: proc() {
 
 	switch user_input {
 	case "m":
-		printf("%vYOU HAVE SELECTED: MOVE FILES%v", BOLD_YELLOW, RESET)
+		printf("%vYOU HAVE SELECTED: MOVE FILES%v", visuals.BOLD_YELLOW, visuals.RESET)
 		printf(
 			"This will move the duplicates files from >> %v << to a new dir called `duplicates`",
 			big_dir.path,
@@ -306,7 +320,7 @@ main :: proc() {
 		move_user_input := get_user_input(prompt_message = prompt, allocator = arena_alloc)
 		move_user_input = clean_user_input(move_user_input, arena_alloc)
 		if move_user_input == "y" {
-			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", BOLD_YELLOW, RESET)
+			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", visuals.BOLD_YELLOW, visuals.RESET)
 			new_path, np_err := filepath.join({big_dir.path, "duplicates"}, arena_alloc)
 			if np_err != nil {
 				fmt.eprintln("NEW PATH ERROR", np_err)
@@ -339,17 +353,17 @@ main :: proc() {
 
 				}
 			}
-			printf("%v\n============================= %v", HIGH_BLUE, RESET)
-			printf("%v\nDONE DONE DONE %v", HIGH_BLUE, RESET)
-			printf("%v\n============================= %v", HIGH_BLUE, RESET)
+			printf("%v\n============================= %v", visuals.REG_CYAN, visuals.RESET)
+			printf("%v\nDONE DONE DONE %v", visuals.REG_CYAN, visuals.RESET)
+			printf("%v\n============================= %v", visuals.REG_CYAN, visuals.RESET)
 
 
 		} else {
-			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", RED, RESET)
+			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", visuals.BOLD_RED, visuals.RESET)
 		}
 
 	case "d":
-		printf("%vYOU HAVE SELECTED: DELETE FILES%v", RED, RESET)
+		printf("%vYOU HAVE SELECTED: DELETE FILES%v", visuals.BOLD_RED, visuals.RESET)
 		// TODO we want to copy all the duplicate files into the new path
 		for dup, index in duplicates {
 			if dup != "" {
