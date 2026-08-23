@@ -5,12 +5,12 @@ run-debug:
 	clear && make debug && ./debug_build-main_odin
 
 build:
-	odin build . -out:dir_diff
+	odin build .
 
 debug:
 	odin build . -debug -out:debug_build-main_odin
 
-clean: 
+clean:
 	rm -rf ./debug_build-main_odin.dSYM ./dir-diff.dSYM ./debug_build-main_odin
 
 

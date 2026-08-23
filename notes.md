@@ -75,7 +75,26 @@ get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
 
 Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and also note how we allocate to the arena we create it. We're putting everything in the same arena in this case.
 
+---
 
+# TEMP NOTES:
 
+[DEBUG] --- [2026-08-22 11:12:41] [dir_diff.odin:192:find_duplicates_in_two_dirs()] 3.435416ms
+[DEBUG] --- [2026-08-22 11:13:42] [dir_diff.odin:192:find_duplicates_in_two_dirs()] 3.3215ms
+[DEBUG] --- [2026-08-22 11:13:58] [dir_diff.odin:192:find_duplicates_in_two_dirs()] 3.365292ms
 
+---
 
+**with ordered remove:**
+THE ALGORITHM HAS LASTED:
+[DEBUG] --- [2026-08-22 11:31:00] [dir_diff.odin:196:find_duplicates_in_two_dirs()] 3.242416ms
+THE ALGORITHM HAS LASTED:
+[DEBUG] --- [2026-08-22 11:31:34] [dir_diff.odin:196:find_duplicates_in_two_dirs()] 3.224875ms
+
+**with unordered remove:**
+THE ALGORITHM HAS LASTED:
+[DEBUG] --- [2026-08-22 11:32:12] [dir_diff.odin:196:find_duplicates_in_two_dirs()] 3.028ms
+THE ALGORITHM HAS LASTED:
+[DEBUG] --- [2026-08-22 11:32:48] [dir_diff.odin:196:find_duplicates_in_two_dirs()] 3.020167ms
+THE ALGORITHM HAS LASTED:
+[DEBUG] --- [2026-08-22 11:33:20] [dir_diff.odin:196:find_duplicates_in_two_dirs()] 3.09175ms

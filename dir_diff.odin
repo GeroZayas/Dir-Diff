@@ -1,5 +1,6 @@
 /*
-Improve the algorithm of checking for duplicates, have a seen-already array
+* Improve the algorithm of checking for duplicates, have a seen-already array
+* Have a way to measure it (time)
 
 */
 
@@ -12,6 +13,7 @@ import vmem "core:mem/virtual"
 import "core:os"
 import "core:path/filepath"
 import "core:strings"
+import "core:time"
 
 print :: fmt.println
 printf :: fmt.printfln
@@ -113,8 +115,8 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 	path2_str := new(string, arena_alloc)
 	// FOR testing and debugging only:
 	if debug {
-		path1_str^ = "/Users/gero/Documents/Obsidian-docs/Coding-Books"
-		path2_str^ = "/Users/gero/Documents/Obsidian-docs/Obsidian-Gero-Zayas"
+		path1_str^ = "/Users/gero/Documents/Coding/Odin-Programs/dir-diff/foo"
+		path2_str^ = "/Users/gero/Documents/Coding/Odin-Programs/dir-diff/bar"
 	} else {
 		buffer: [1024]byte
 		// get input from the user
@@ -168,17 +170,31 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo, alloc: mem.Allo
 	more_files_dir_array := dir_a.files_array
 	fewer_files_dir_array := dir_b.files_array
 
+	stopwatch : time.Stopwatch
+
+	time.stopwatch_start(&stopwatch)
+
+	seen := make([dynamic]string, alloc)
+
+	// TODO(gero): add StopWatch here to measure how long it takes
 	// NOTE: we are gonna loop over the fewer files dir - outer loop, more dirs - inner loop
 	for file_i in fewer_files_dir_array {
-		log.debug("file_i in fewer_files_dir_array ", file_i)
-		for file_j in more_files_dir_array {
-			log.debug("file_j in more_files_dir_array ", file_j)
+		// log.debug("file_i in fewer_files_dir_array ", file_i)
+		for file_j, file_j_index in more_files_dir_array {
+			// log.debug("file_j in more_files_dir_array ", file_j)
 			if file_i.name == file_j.name {
-				log.debug("file_i == file_j", file_i.name == file_j.name)
+				// log.debug("file_i == file_j", file_i.name == file_j.name)
 				append(&duplicates, file_i.name)
+				unordered_remove_dynamic_array(&more_files_dir_array, file_j_index)
 			}
 		}
 	}
+
+	time.stopwatch_stop(&stopwatch)
+	print("===========================================")
+	print("THE ALGORITHM HAS LASTED:")
+	log.debug(time.stopwatch_duration(stopwatch))
+	print("===========================================")
 
 	return duplicates
 }
