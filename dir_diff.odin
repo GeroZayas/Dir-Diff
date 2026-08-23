@@ -32,13 +32,6 @@ print :: fmt.println
 printf :: fmt.printfln
 
 
-// CONSTANTS
-// =========
-
-BOLD_YELLOW := "\e[1;33m"
-RESET := "\e[0m"
-HIGH_BLUE := "\e[1;94m"
-RED := "\e[0;91m"
 
 
 // STRUCTS
