@@ -18,6 +18,8 @@ The program presents the results.
 
 package dir_diff
 
+import "base:runtime"
+import "./visuals"
 import "core:fmt"
 import "core:log"
 import "core:mem"
@@ -26,21 +28,35 @@ import "core:os"
 import "core:path/filepath"
 import "core:strings"
 import "core:time"
-import "./visuals"
+import rl "vendor:raylib"
+import clay "clay-odin"
 
 print :: fmt.println
 printf :: fmt.printfln
 
 
+// FONTS
+// =========
+
+FONT_ID_BODY_16 :: 0
+FONT_ID_TITLE_56 :: 9
+FONT_ID_TITLE_52 :: 1
+FONT_ID_TITLE_48 :: 2
+FONT_ID_TITLE_36 :: 3
+FONT_ID_TITLE_32 :: 4
+FONT_ID_BODY_36 :: 5
+FONT_ID_BODY_30 :: 6
+FONT_ID_BODY_28 :: 7
+FONT_ID_BODY_24 :: 8
 
 
 // STRUCTS
 // =========
 
 DirectoryInfo :: struct {
-	name_dir:         string,
-	path:             string,
-	total_files:      int,
+	name_dir:    string,
+	path:        string,
+	total_files: int,
 	files_array: [dynamic]os.File_Info,
 }
 
@@ -48,19 +64,14 @@ DirectoryInfo :: struct {
 // PROCEDURES
 // ===========
 
-welcome_header :: proc() {
-	print("")
-	printf("%v          ====================%v", visuals.BOLD_RED, visuals.RESET)
-	printf("%v          ||||  DIR DIFF  ||||%v", visuals.BOLD_YELLOW, visuals.RESET)
-	printf("%v          ====================%v", visuals.BOLD_RED, visuals.RESET)
-	printf("%vWelcome! Insert the paths of the two dirs to compare:%v", visuals.BOLD_BLUE, visuals.RESET)
-	print("")
-}
-
 /*
 Returns a DirectoryInfo struct
 */
-get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, arena_alloc: mem.Allocator) -> DirectoryInfo {
+get_array_file_names :: proc(
+	dir_path: string,
+	print_file_names: bool = false,
+	arena_alloc: mem.Allocator,
+) -> DirectoryInfo {
 	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
 
 	files_array := make([dynamic]os.File_Info, arena_alloc)
@@ -87,17 +98,20 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, a
 	abs_path, _ := os.get_absolute_path(dir_path, arena_alloc)
 
 	dir_info := DirectoryInfo {
-		name_dir        = dir_name,
-		total_files     = total_files,
-		files_array 	= files_array,
-		path            = abs_path,
+		name_dir    = dir_name,
+		total_files = total_files,
+		files_array = files_array,
+		path        = abs_path,
 	}
 
 	return dir_info
 
 }
 
-return_big_then_small_dir :: proc(dir_a, dir_b: DirectoryInfo, allocator: mem.Allocator) -> [2]DirectoryInfo {
+return_big_then_small_dir :: proc(
+	dir_a, dir_b: DirectoryInfo,
+	allocator: mem.Allocator,
+) -> [2]DirectoryInfo {
 
 	res := "The directory with more files is: "
 
@@ -159,14 +173,21 @@ get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryI
 	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
 	// BUT this is not necessarily the case always
 
-	big_then_small_dirs_array: [2]DirectoryInfo = return_big_then_small_dir(path1_dir^, path2_dir^, allocator = arena_alloc)
+	big_then_small_dirs_array: [2]DirectoryInfo = return_big_then_small_dir(
+		path1_dir^,
+		path2_dir^,
+		allocator = arena_alloc,
+	)
 	printf("Biggest DIR: %v", big_then_small_dirs_array[0].name_dir)
 	printf("Biggest DIR Path: %v", big_then_small_dirs_array[0].path)
 
 	return big_then_small_dirs_array
 }
 
-find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo, alloc: mem.Allocator) -> [dynamic]string {
+find_duplicates_in_two_dirs :: proc(
+	dir_a, dir_b: DirectoryInfo,
+	alloc: mem.Allocator,
+) -> [dynamic]string {
 	// TODO(gero): Measure mathematically which one is better, or if it is the same exactly:
 	// 1st for loop the dir with more files, 2nd loop dir with fewer, OR the other way around
 
@@ -176,7 +197,7 @@ find_duplicates_in_two_dirs :: proc(dir_a, dir_b: DirectoryInfo, alloc: mem.Allo
 	more_files_dir_array := dir_a.files_array
 	fewer_files_dir_array := dir_b.files_array
 
-	stopwatch : time.Stopwatch
+	stopwatch: time.Stopwatch
 
 	time.stopwatch_start(&stopwatch)
 
@@ -233,10 +254,108 @@ print_all_duplicates :: proc(dups: [dynamic]string) {
 	print("========================================")
 }
 
+get_center_text :: proc(width, height: f32, text: cstring, text_fs: int) -> rl.Vector2{
+	text_len := rl.MeasureText(text, i32(text_fs))
+	// log.debug(text_len)
+	x: f32 = width / 2 - f32(text_len/2)
+	y : f32 = height / 2 - f32(text_fs/2)
+	return {x,y}
+}
+
+// ============== CLAY ==============
+// Define some colors.
+COLOR_LIGHT :: clay.Color{224, 215, 210, 255}
+COLOR_RED :: clay.Color{168, 66, 28, 255}
+COLOR_ORANGE :: clay.Color{225, 138, 50, 255}
+COLOR_BLACK :: clay.Color{0, 0, 0, 255}
+
+sidebar_item_component :: proc(index : u32){
+	if clay.UI(clay.ID("Sidebar Gero", index))({
+		layout = clay.LayoutConfig{
+			sizing = {
+				width = clay.SizingGrow({}),
+				height = clay.SizingFixed(50)
+			}
+		},
+		backgroundColor = COLOR_ORANGE,
+		}) {}
+}
+
+error_handler :: proc "c" (errorData: clay.ErrorData){
+		context = runtime.default_context() // <- we need explicit context for c procedures
+		log.debug("CLAY ERROR DATA:", errorData)
+}
+
+measure_text :: proc "c" (
+	text: clay.StringSlice,
+	config: ^clay.TextElementConfig,
+	userData: rawptr,
+	) -> clay.Dimensions{
+		return {
+			width = f32(text.length * i32(config.fontSize)),
+			height = f32(config.fontSize)
+		}
+}
+
+headerTextConfig := clay.TextElementConfig {
+	fontId = 8,
+	fontSize = 45,
+	textColor = {50, 250, 150, 250},
+	letterSpacing=10,
+}
+
+createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
+	clay.BeginLayout()
+	if clay.UI(clay.ID("OuterContainer"))({
+		layout = {layoutDirection =.TopToBottom, sizing = {clay.SizingGrow(), clay.SizingGrow()}}, backgroundColor = {250, 0, 0, 250}}) {
+			if clay.UI(clay.ID("Header"))(
+				{layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(100)}, childAlignment = {y =.Center}, childGap = 24, padding = {left = 15, right=15}}},
+			){
+				clay.Text("DirDiff", headerTextConfig)
+			}
+		}
+	return clay.EndLayout(frametime)
+}
+
+animationLerpValue: f32 = -1.0
+
+Raylib_Font :: struct {
+	fontId: u16,
+	font:   rl.Font,
+}
+
+raylib_fonts := [dynamic]Raylib_Font{}
+
+clay_color_to_rl_color :: proc(color: clay.Color) -> rl.Color{
+	return {u8(color.r), u8(color.g), u8(color.b), u8(color.a)}
+}
+
+clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand), allocator := context.temp_allocator){
+	overlay_colors := make([dynamic]clay.Color, allocator)
+	for i in 0..< render_commands.length {
+		render_command := clay.RenderCommandArray_Get(render_commands, i)
+		bounds := render_command.boundingBox
+
+		#partial switch render_command.commandType {
+		case .None: // None
+		case .Text:
+			config := render_command.renderData.text
+			text := string(config.stringContents.chars[:config.stringContents.length])
+			cstr_text := strings.clone_to_cstring(text, allocator)
+			font := rl.GetFontDefault()
+			rl.DrawTextEx(font, cstr_text, {bounds.x, bounds.y}, f32(config.fontSize), f32(config.letterSpacing), clay_color_to_rl_color(config.textColor))
+		case .OverlayColorStart:
+			config := render_command.renderData.overlayColor
+			append(&overlay_colors, config.color)
+		case .OverlayColorEnd:
+			pop(&overlay_colors)
+		}
+
+	}
+}
 
 // MAIN - ENTRY POINT
 // ==================
-
 main :: proc() {
 
 	// ARENA LOGIC
@@ -249,147 +368,44 @@ main :: proc() {
 	track: mem.Tracking_Allocator
 	mem.tracking_allocator_init(&track, context.allocator)
 	context.allocator = mem.tracking_allocator(&track)
-
 	context.logger = log.create_console_logger()
 
+	// CLAY
+	screenWidth :i32= 900
+	screenHeight :i32= 600
+
+	min_memory_size := clay.MinMemorySize()
+	memory := make([^]u8, min_memory_size)
+	clay_arena: clay.Arena = clay.CreateArenaWithCapacityAndMemory(uint(min_memory_size), memory)
+	clay.Initialize(clay_arena, {f32(screenHeight), f32(screenWidth)}, {handler=error_handler})
+	clay.SetMeasureTextFunction(measure_text, nil)
+	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI})
+
 	// =============== START OF ACTUAL PROGRAM ===================
-	title := " WELCOME to DIR DIFF "
-	visuals.title(title, line_color="yellow", text_color="blue")
-	// welcome_header()
-	// if get_paths_dirs(true) <- true means hardcoded paths for testing. MAKE IT FALSE when for real
+	rl.InitWindow(screenWidth, screenHeight, "DirDiff")
+	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
+	geroImage := rl.LoadTexture("assets/images/webcam-toy-foto1.png")
 
-	str1 := " Default is DEBUG -> hardcoded dirs' paths "
-	str1 = strings.centre_justify(str1, 100, "=", allocator = arena_alloc)
-	str2 := " Type `Y` for DEBUG `N` to type in the dirs' paths (Hit `ENTER` for default): "
-	str2 = strings.centre_justify(str2, 100, "=", allocator = arena_alloc)
 
-	prompt := strings.concatenate({str1, "\n", str2}, allocator = arena_alloc)
+	for !rl.WindowShouldClose() {
+		defer free_all(context.temp_allocator)
+		screenWidth = rl.GetScreenWidth()
+		screenHeight = rl.GetScreenHeight()
 
-	user_input := get_user_input(prompt_message = prompt, allocator = arena_alloc)
-	user_input = clean_user_input(user_input, arena_alloc)
+		clay.SetLayoutDimensions({cast(f32)rl.GetScreenWidth(), cast(f32)rl.GetScreenHeight()})
+		clay.SetPointerState(transmute(clay.Vector2)rl.GetMousePosition(), rl.IsMouseButtonDown(rl.MouseButton.LEFT))
+		clay.UpdateScrollContainers(false, transmute(clay.Vector2)rl.GetMouseWheelMoveV(), rl.GetFrameTime())
 
-	DEBUG: bool
-	if user_input == "y" {
-		DEBUG = true
-	} else if user_input == "n" {
-		DEBUG = false
+		renderCommands := createLayout(animationLerpValue < 0 ? (animationLerpValue + 1) : (1 - animationLerpValue), rl.GetFrameTime())
+		// BEGIN DRAWING
+		rl.BeginDrawing()
+		clay_raylib_render(&renderCommands)
+		rl.EndDrawing()
 	}
-
-	printf("DEBUG IS %v", DEBUG)
-
-	// TODO(gero) take this /* */ comment marks out:
-	big_then_small_dirs_array: [2]DirectoryInfo = get_paths_dirs(DEBUG, arena_alloc)
-
-	big_dir, small_dir := big_then_small_dirs_array[0], big_then_small_dirs_array[1]
-
-	duplicates := find_duplicates_in_two_dirs(big_dir, small_dir, arena_alloc)
-
-	exist_duplicates: bool = len(duplicates) > 0
-
-	log.debug("exist_duplicates", exist_duplicates)
-
-	if exist_duplicates {
-		print_all_duplicates(duplicates)
-	}
-
-	prompt = `
-	>> INPUT 'm' to move these duplicates to new a new dir called "duplicates"
-	>> INPUT 'd' to delete all these duplicate files
-	`
-	user_input = get_user_input(prompt_message = prompt, allocator = arena_alloc)
-	user_input = clean_user_input(user_input, arena_alloc)
-
-	switch user_input {
-	case "m":
-		printf("%vYOU HAVE SELECTED: MOVE FILES%v", visuals.BOLD_YELLOW, visuals.RESET)
-		printf(
-			"This will move the duplicates files from >> %v << to a new dir called `duplicates`",
-			big_dir.path,
-		)
-		printf("In the PARENT path of >> %v <<", big_dir.path)
-		prompt = `
-		>> Type "y" to confirm, "n" to cancel
-		`
-		move_user_input := get_user_input(prompt_message = prompt, allocator = arena_alloc)
-		move_user_input = clean_user_input(move_user_input, arena_alloc)
-		if move_user_input == "y" {
-			printf("%v\n>>>>>>>>> MOVING FILES >>>>>>>>> %v", visuals.BOLD_YELLOW, visuals.RESET)
-			new_path, np_err := filepath.join({big_dir.path, "duplicates"}, arena_alloc)
-			if np_err != nil {
-				fmt.eprintln("NEW PATH ERROR", np_err)
-			}
-			// if the DIR does not exist already, we create one else, just jump to the next part
-			if !os.is_dir(new_path) {
-				mkdir_err := os.make_directory(new_path)
-				if mkdir_err != nil {
-					fmt.eprintfln("ERROR %v", mkdir_err)
-				}
-			}
-
-			// TODO we want to copy all the duplicate files into the new path
-			for dup, index in duplicates {
-				if dup != "" {
-					// log.debug(dup)
-					printf("COPYING %i - %s", index + 1, dup)
-					source := strings.concatenate({big_dir.path, "/", dup}, arena_alloc)
-					destination := strings.concatenate({new_path, "/", dup}, arena_alloc)
-					// log.debug("SOURCE= ", source) // could be EISDIR :: _Platform_Error.EISDIR
-					// log.debug("DESTINATION= ", destination)
-					c_err := os.copy_file(dst_path = destination, src_path = source)
-					if c_err != nil {
-						log.error("COPY ERROR= ", c_err)
-					}
-					rm_err := os.remove(name = source)
-					if rm_err != nil {
-						log.error("REMOVE ERROR= ", c_err)
-					}
-
-				}
-			}
-			printf("%v\n============================= %v", visuals.REG_CYAN, visuals.RESET)
-			printf("%v\nDONE DONE DONE %v", visuals.REG_CYAN, visuals.RESET)
-			printf("%v\n============================= %v", visuals.REG_CYAN, visuals.RESET)
-
-
-		} else {
-			printf("%v\n>>>>>>>>> You CANCELLED the Move >>>>>>>>>%v", visuals.BOLD_RED, visuals.RESET)
-		}
-
-	case "d":
-		printf("%vYOU HAVE SELECTED: DELETE FILES%v", visuals.BOLD_RED, visuals.RESET)
-		// TODO we want to copy all the duplicate files into the new path
-		for dup, index in duplicates {
-			if dup != "" {
-
-				printf("DELETING %i - %s", index + 1, dup)
-				source := strings.concatenate({big_dir.path, "/", dup}, arena_alloc)
-				rm_err := os.remove(name = source)
-				if rm_err != nil {
-					log.error("REMOVE ERROR= ", rm_err)
-				}
-
-			}
-		}
-	case:
-		print("UNKNOWN COMMAND")
-	}
-
-
-	// NOTES:
-	// we have to know which FILES are in both dirs.
-
-	// TODO(gero)
-	// 1) Ask the user what to do with the duplicates
-	// OPTIONS: a) delete all duplicates from a selected dir, by default the one with more files
-	//          b) move all those files to a brand new dir
-	//          c) Do nothing - just put the results in a txt or md file if user wants that
-	// 2)
-	// 3)
-	// 4) Write tests (do not be lazy, Gero)
-
 
 	// =============== END OF ACTUAL PROGRAM ===================
 	free_all(arena_alloc)
+	free(clay_arena.memory)
 
 	log.destroy_console_logger(context.logger)
 
