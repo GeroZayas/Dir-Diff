@@ -46,6 +46,7 @@ COLOR_TOP_BORDER_4 :: clay.Color{236, 189, 80, 255}
 COLOR_TOP_BORDER_5 :: clay.Color{240, 213, 137, 255}
 
 COLOR_LIGHT :: clay.Color{244, 235, 230, 255}
+COLOR_LIGHTGRAYGERO :: clay.Color{0, 0, 0, 255 * 0.1}
 COLOR_LIGHT_HOVER :: clay.Color{224, 215, 210, 255}
 COLOR_BUTTON_HOVER :: clay.Color{238, 227, 225, 255}
 COLOR_BROWN :: clay.Color{61, 26, 5, 255}
@@ -388,8 +389,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		backgroundColor = COLOR_LIGHT,
 	}){
 		draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h=10)
-		draw_stripe("stripe1", cast(clay.Color)rl.GOLD, h=8)
-		draw_stripe("stripe1", cast(clay.Color)rl.ORANGE, h=6)
+		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h=8)
+		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h=6)
 		if clay.UI(clay.ID("Header"))({
 			layout = {
 				sizing = {
@@ -447,9 +448,112 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 				)
 		}
-		draw_stripe("stripe1", cast(clay.Color)rl.ORANGE, h=6)
-		draw_stripe("stripe1", cast(clay.Color)rl.GOLD, h=8)
+		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h=6)
+		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h=8)
 		draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h=10)
+
+		if clay.UI(clay.ID("Space"))({
+			layout = {
+				sizing = {
+					clay.SizingGrow(),
+					clay.SizingFixed(50),
+				},
+			},
+		}){}
+
+		if clay.UI(clay.ID("OuterDropDirContainer"))({
+			layout = {
+				sizing = {
+					clay.SizingGrow(),
+					clay.SizingGrow(),
+				},
+				// padding = clay.PaddingAll(10),
+				childAlignment = {x=.Center, y=.Top},
+				layoutDirection = .LeftToRight
+			},
+		}){
+
+			if clay.UI(clay.ID("DropDirContainer"))({
+				layout = {
+					sizing = {
+						clay.SizingFixed(550),
+						clay.SizingFixed(280),
+					},
+					padding = clay.PaddingAll(5),
+					childAlignment = {x=.Center, y=.Center},
+					layoutDirection = .LeftToRight,
+					childGap=20
+				},
+				backgroundColor = cast(clay.Color)rl.WHITE,
+				cornerRadius = clay.CornerRadiusAll(5)
+				}){
+					if clay.UI(clay.ID("DropDir1Container"))({
+						layout = {
+							sizing = {
+								clay.SizingGrow(),
+								clay.SizingGrow(),
+							},
+							layoutDirection = .TopToBottom,
+							childAlignment = {x = .Center, y =.Center},
+							childGap = 10,
+						},
+						}){
+							clay.Text("Drag & Drop Dir 1", clay.TextElementConfig{
+								fontId = 8,
+								fontSize = 18,
+								textColor = cast(clay.Color)rl.RED,
+								letterSpacing=2,
+							})
+							if clay.UI(clay.ID("DropDir1"))({
+								layout = {
+									sizing = {
+										clay.SizingFixed(200),
+										clay.SizingFixed(200),
+									},
+									// padding = clay.PaddingAll(2),
+									layoutDirection = .TopToBottom
+								},
+								backgroundColor = COLOR_LIGHTGRAYGERO,
+								cornerRadius = clay.CornerRadiusAll(5),
+								}){}
+						}
+						if clay.UI(clay.ID("DropDir2Container"))({
+							layout = {
+								sizing = {
+									clay.SizingGrow(),
+									clay.SizingGrow(),
+								},
+								layoutDirection = .TopToBottom,
+								childAlignment = {x = .Center, y =.Center},
+								childGap = 10,
+							},
+							}){
+								clay.Text("Drag & Drop Dir 2", clay.TextElementConfig{
+									fontId = 8,
+									fontSize = 18,
+									textColor = cast(clay.Color)rl.BLUE,
+									letterSpacing=2,
+								})
+								if clay.UI(clay.ID("DropDir2"))({
+									layout = {
+										sizing = {
+											clay.SizingFixed(200),
+											clay.SizingFixed(200),
+										},
+										// padding = clay.PaddingAll(2),
+										layoutDirection = .TopToBottom
+									},
+									backgroundColor = COLOR_LIGHTGRAYGERO,
+									cornerRadius = clay.CornerRadiusAll(5),
+									}){}
+							}
+							}
+
+		}
+
+
+
+
 
 	}
 	return clay.EndLayout(frametime)
@@ -631,8 +735,8 @@ draw_arc :: proc(x, y : f32, inner_rad, outer_rad: f32, start_angle, end_angle: 
 
 debugModeEnabled: bool = false
 
-screenWidth :i32= 900
-screenHeight :i32= 600
+screenWidth :i32= 1000
+screenHeight :i32= 800
 
 // MAIN - ENTRY POINT
 // ==================
