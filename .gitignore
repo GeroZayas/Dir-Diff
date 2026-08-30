@@ -1,7 +1,8 @@
 # Created by https://www.toptal.com/developers/gitignore/api/macos
 # Edit at https://www.toptal.com/developers/gitignore?templates=macos
 
-
+example1/
+example1*
 main
 debug_build-main_odin
 debug_build-main_odin.dSYM/*
