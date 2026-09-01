@@ -4,10 +4,13 @@
 
 package dir_diff
 
-import "base:runtime"
 import "./visuals"
+import "base:runtime"
+import clay "clay-odin"
+import "core:c"
 import "core:fmt"
 import "core:log"
+import "core:math"
 import "core:mem"
 import vmem "core:mem/virtual"
 import "core:os"
@@ -15,9 +18,6 @@ import "core:path/filepath"
 import "core:strings"
 import "core:time"
 import rl "vendor:raylib"
-import clay "clay-odin"
-import "core:math"
-import "core:c"
 
 
 print :: fmt.println
@@ -46,7 +46,9 @@ COLOR_TOP_BORDER_4 :: clay.Color{236, 189, 80, 255}
 COLOR_TOP_BORDER_5 :: clay.Color{240, 213, 137, 255}
 
 COLOR_LIGHT :: clay.Color{244, 235, 230, 255}
-COLOR_LIGHTGRAYGERO :: clay.Color{0, 0, 0, 255 * 0.1}
+COLOR_LIGHT_LIGHTER :: clay.Color{230, 225, 225, 255}
+COLOR_LIGHTGRAYGERO_1 :: clay.Color{0, 0, 0, 255 * 0.1}
+COLOR_LIGHTGRAYGERO_2 :: clay.Color{0, 0, 0, 255 * 0.2}
 COLOR_LIGHT_HOVER :: clay.Color{224, 215, 210, 255}
 COLOR_BUTTON_HOVER :: clay.Color{238, 227, 225, 255}
 COLOR_BROWN :: clay.Color{61, 26, 5, 255}
@@ -58,6 +60,11 @@ COLOR_BLUE :: clay.Color{111, 173, 162, 255}
 COLOR_TEAL :: clay.Color{111, 173, 162, 255}
 COLOR_BLUE_DARK :: clay.Color{2, 32, 82, 255}
 COLOR_BLACK :: clay.Color{0, 0, 0, 255}
+
+
+// Pictures
+geroImage: rl.Texture2D = {}
+dir_one: rl.Texture2D = {}
 
 
 // STRUCTS
@@ -264,39 +271,42 @@ print_all_duplicates :: proc(dups: [dynamic]string) {
 	print("========================================")
 }
 
-get_center_text :: proc(width, height: f32, text: cstring, text_fs: int) -> rl.Vector2{
+get_center_text :: proc(width, height: f32, text: cstring, text_fs: int) -> rl.Vector2 {
 	text_len := rl.MeasureText(text, i32(text_fs))
 	// log.debug(text_len)
-	x: f32 = width / 2 - f32(text_len/2)
-	y : f32 = height / 2 - f32(text_fs/2)
-	return {x,y}
+	x: f32 = width / 2 - f32(text_len / 2)
+	y: f32 = height / 2 - f32(text_fs / 2)
+	return {x, y}
 }
 
 // ============== CLAY ==============
 
-sidebar_item_component :: proc(index : u32){
-	if clay.UI(clay.ID("Sidebar Gero", index))({
-		layout = clay.LayoutConfig{
-			sizing = {
-				width = clay.SizingGrow({}),
-				height = clay.SizingFixed(50)
-			}
+sidebar_item_component :: proc(index: u32) {
+	if clay.UI(clay.ID("Sidebar Gero", index))(
+	{
+		layout = clay.LayoutConfig {
+			sizing = {width = clay.SizingGrow({}), height = clay.SizingFixed(50)},
 		},
 		backgroundColor = COLOR_ORANGE,
-		}) {}
+	},
+	) {}
 }
 
-error_handler :: proc "c" (errorData: clay.ErrorData){
-		context = runtime.default_context() // <- we need explicit context for c procedures
-		log.debug("CLAY ERROR DATA:", errorData)
+error_handler :: proc "c" (errorData: clay.ErrorData) {
+	context = runtime.default_context() // <- we need explicit context for c procedures
+	log.debug("CLAY ERROR DATA:", errorData)
 }
 
-measure_text :: proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfig,userData: rawptr,) -> clay.Dimensions{
+measure_text :: proc "c" (
+	text: clay.StringSlice,
+	config: ^clay.TextElementConfig,
+	userData: rawptr,
+) -> clay.Dimensions {
 	line_width: f32 = 0
 	font := raylib_fonts[config.fontId].font
 	text_str := string(text.chars[:text.length])
 
-	for i in 0..<len(text_str) {
+	for i in 0 ..< len(text_str) {
 		glyph_index := text_str[i] - 32
 		glyph := font.glyphs[glyph_index]
 		if glyph.advanceX != 0 {
@@ -308,26 +318,24 @@ measure_text :: proc "c" (text: clay.StringSlice, config: ^clay.TextElementConfi
 	scale_factor := f32(config.fontSize) / f32(font.baseSize)
 	total_spacing := f32(len(text_str)) * f32(config.letterSpacing)
 
-	return {width = line_width * scale_factor + total_spacing, height= f32(config.fontSize)}
+	return {width = line_width * scale_factor + total_spacing, height = f32(config.fontSize)}
 }
 
 headerTextConfig := clay.TextElementConfig {
-	fontId = 8,
-	fontSize = 50,
-	textColor = COLOR_ORANGE,
-	letterSpacing=5,
+	fontId        = 8,
+	fontSize      = 50,
+	textColor     = COLOR_ORANGE,
+	letterSpacing = 5,
 }
 
-geroImage: rl.Texture2D = {}
 
-
-border_config_1 := clay.BorderElementConfig{
-	color=COLOR_BLUE,
-	width={5,5,5,5, 5},
+border_config_1 := clay.BorderElementConfig {
+	color = COLOR_BLUE,
+	width = {5, 5, 5, 5, 5},
 }
-border_config_2 := clay.BorderElementConfig{
-	color=COLOR_BROWN,
-	width={5,5,5,5, 5},
+border_config_2 := clay.BorderElementConfig {
+	color = COLOR_BROWN,
+	width = {5, 5, 5, 5, 5},
 }
 
 write_to_log :: proc(data: string) {
@@ -361,203 +369,264 @@ ElementDeclaration :: struct {
 
 */
 
-draw_stripe :: proc(id: string, color: clay.Color, w: f32 = 0, h: f32 = 15){
-	if clay.UI(clay.ID(id))({
+draw_stripe :: proc(id: string, color: clay.Color, w: f32 = 0, h: f32 = 15) {
+	if clay.UI(clay.ID(id))(
+	{
 		layout = {
-			sizing = {
-				clay.SizingGrow() if w == 0 else clay.SizingFixed(w),
-				clay.SizingFixed(h),
-			},
-			layoutDirection = .TopToBottom
+			sizing = {clay.SizingGrow() if w == 0 else clay.SizingFixed(w), clay.SizingFixed(h)},
+			layoutDirection = .TopToBottom,
 		},
 		backgroundColor = color,
-		}){}
+	},
+	) {}
 
+}
+
+draw_space :: proc(color: clay.Color, id: string, sizing: f32 = 20) {
+	if clay.UI(clay.ID(id))(
+	{layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(sizing)}}, backgroundColor = color},
+	) {}
 }
 
 createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
 	clay.BeginLayout()
-	if clay.UI(clay.ID("OuterContainer"))({
+	if clay.UI(clay.ID("OuterContainer"))(
+	{
 		layout = {
-			sizing = {
-				clay.SizingGrow(),
-				clay.SizingGrow(),
-			},
+			sizing          = {clay.SizingGrow(), clay.SizingGrow()},
 			// padding = clay.PaddingAll(2),
-			layoutDirection = .TopToBottom
+			layoutDirection = .TopToBottom,
 		},
 		backgroundColor = COLOR_LIGHT,
-	}){
-		draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h=10)
-		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h=8)
-		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h=6)
-		if clay.UI(clay.ID("Header"))({
+	},
+	) {
+		draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
+		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
+		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h = 6)
+		if clay.UI(clay.ID("Header"))(
+		{
 			layout = {
-				sizing = {
-					clay.SizingGrow(),
-					clay.SizingFixed(50),
-				},
+				sizing = {clay.SizingGrow(), clay.SizingFixed(50)},
 				padding = clay.PaddingAll(10),
-				childAlignment = {x=.Center, y=.Center}
+				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = COLOR_ORANGE,
-			}){
-				clay.Text("DirDiff", clay.TextElementConfig{
+		},
+		) {
+			clay.Text(
+				"DirDiff",
+				clay.TextElementConfig {
 					fontId = 8,
 					fontSize = 45,
 					textColor = cast(clay.Color)rl.RAYWHITE,
-					letterSpacing=10,
-				}
-				)
-		}
-		if clay.UI(clay.ID("SubHeaderVersionAndData"))({
-			layout = {
-				sizing = {
-					clay.SizingGrow(),
-					clay.SizingFixed(12),
+					letterSpacing = 10,
 				},
+			)
+		}
+		if clay.UI(clay.ID("SubHeaderVersionAndData"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(12)},
 				padding = clay.PaddingAll(2),
-				childAlignment = {x=.Center, y=.Center}
+				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = COLOR_BROWN,
-			}){
-				clay.Text("v0.1.0 - Gero Zayas", clay.TextElementConfig{
-					fontId = 8,
-					fontSize = 10,
-					textColor = cast(clay.Color)rl.RAYWHITE,
-					letterSpacing=1,
-				}
-				)
+		},
+		) {
+
 		}
-		if clay.UI(clay.ID("SubHeader"))({
+		if clay.UI(clay.ID("SubHeader"))(
+		{
 			layout = {
-				sizing = {
-					clay.SizingGrow(),
-					clay.SizingFixed(25),
-				},
+				sizing = {clay.SizingGrow(), clay.SizingFixed(25)},
 				padding = clay.PaddingAll(10),
-				childAlignment = {x=.Center, y=.Center}
+				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = COLOR_RED,
-			}){
-				clay.Text("Compare Dirs - Manage Duplicates", clay.TextElementConfig{
+			transition = {
+				handler = clay.EaseOut,
+				duration = 2,
+				interactionHandling = .AllowInteractionsWhileTransitioningPosition,
+				enter = {},
+			},
+		},
+		) {
+			clay.Text(
+				"Compare Dirs - Manage Duplicates",
+				clay.TextElementConfig {
 					fontId = 8,
-					fontSize = 20,
+					fontSize = clay.Hovered() ? 22 : 20,
 					textColor = cast(clay.Color)rl.RAYWHITE,
-					letterSpacing=2,
-				}
-				)
+					letterSpacing = 2,
+				},
+			)
 		}
-		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h=6)
-		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h=8)
-		draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h=10)
+		// draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h = 6)
+		// draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
+		// draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
 
-		if clay.UI(clay.ID("Space"))({
-			layout = {
-				sizing = {
-					clay.SizingGrow(),
-					clay.SizingFixed(50),
-				},
-			},
-		}){}
+		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 12)
 
-		if clay.UI(clay.ID("OuterDropDirContainer"))({
+
+		if clay.UI(clay.ID("OuterDropDirContainer"))(
+		{
 			layout = {
-				sizing = {
-					clay.SizingGrow(),
-					clay.SizingGrow(),
-				},
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				// padding = clay.PaddingAll(10),
-				childAlignment = {x=.Center, y=.Top},
-				layoutDirection = .LeftToRight
+				childAlignment = {x = .Center, y = .Center},
+				layoutDirection = .LeftToRight,
 			},
-		}){
+		},
+		) {
 
-			if clay.UI(clay.ID("DropDirContainer"))({
+			if clay.UI(clay.ID("DropDirContainer"))(
+			{
 				layout = {
-					sizing = {
-						clay.SizingFixed(550),
-						clay.SizingFixed(280),
-					},
+					sizing = {clay.SizingFixed(550), clay.SizingFixed(280)},
 					padding = clay.PaddingAll(5),
-					childAlignment = {x=.Center, y=.Center},
+					childAlignment = {x = .Center, y = .Center},
 					layoutDirection = .LeftToRight,
-					childGap=20
+					childGap = 20,
 				},
 				backgroundColor = cast(clay.Color)rl.WHITE,
-				cornerRadius = clay.CornerRadiusAll(5)
-				}){
-					if clay.UI(clay.ID("DropDir1Container"))({
-						layout = {
-							sizing = {
-								clay.SizingGrow(),
-								clay.SizingGrow(),
-							},
-							layoutDirection = .TopToBottom,
-							childAlignment = {x = .Center, y =.Center},
-							childGap = 10,
+				cornerRadius = clay.CornerRadiusAll(5),
+			},
+			) {
+				if clay.UI(clay.ID("DropDir1Container"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childAlignment = {x = .Center, y = .Center},
+						childGap = 10,
+					},
+				},
+				) {
+					clay.Text(
+						"Drag & Drop Dir 1",
+						clay.TextElementConfig {
+							fontId = 8,
+							fontSize = 18,
+							textColor = cast(clay.Color)rl.RED,
+							letterSpacing = 2,
 						},
-						}){
-							clay.Text("Drag & Drop Dir 1", clay.TextElementConfig{
-								fontId = 8,
-								fontSize = 18,
-								textColor = cast(clay.Color)rl.RED,
-								letterSpacing=2,
-							})
-							if clay.UI(clay.ID("DropDir1"))({
-								layout = {
-									sizing = {
-										clay.SizingFixed(200),
-										clay.SizingFixed(200),
-									},
-									// padding = clay.PaddingAll(2),
-									layoutDirection = .TopToBottom
-								},
-								backgroundColor = COLOR_LIGHTGRAYGERO,
-								cornerRadius = clay.CornerRadiusAll(5),
-								}){}
-						}
-						if clay.UI(clay.ID("DropDir2Container"))({
-							layout = {
-								sizing = {
-									clay.SizingGrow(),
-									clay.SizingGrow(),
-								},
-								layoutDirection = .TopToBottom,
-								childAlignment = {x = .Center, y =.Center},
-								childGap = 10,
-							},
-							}){
-								clay.Text("Drag & Drop Dir 2", clay.TextElementConfig{
-									fontId = 8,
-									fontSize = 18,
-									textColor = cast(clay.Color)rl.BLUE,
-									letterSpacing=2,
-								})
-								if clay.UI(clay.ID("DropDir2"))({
-									layout = {
-										sizing = {
-											clay.SizingFixed(200),
-											clay.SizingFixed(200),
-										},
-										// padding = clay.PaddingAll(2),
-										layoutDirection = .TopToBottom
-									},
-									backgroundColor = COLOR_LIGHTGRAYGERO,
-									cornerRadius = clay.CornerRadiusAll(5),
-									}){}
-							}
-							}
-
+					)
+					if clay.UI(clay.ID("DropDir1"))(
+					{
+						layout = {
+							sizing = {clay.SizingFixed(200), clay.SizingFixed(200)},
+							childAlignment = {x = .Center, y = .Center},
+							// padding = clay.PaddingAll(2),
+							layoutDirection = .TopToBottom,
+						},
+						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
+						cornerRadius = clay.CornerRadiusAll(5),
+					},
+					) {
+						if clay.UI(clay.ID("ImageDir"))(
+						{
+							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
+							image = {imageData = &dir_one},
+						},
+						) {}
+					}
+				}
+				if clay.UI(clay.ID("DropDir2Container"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingGrow()},
+						layoutDirection = .TopToBottom,
+						childAlignment = {x = .Center, y = .Center},
+						childGap = 10,
+					},
+				},
+				) {
+					clay.Text(
+						"Drag & Drop Dir 2",
+						clay.TextElementConfig {
+							fontId = 8,
+							fontSize = 18,
+							textColor = cast(clay.Color)rl.BLUE,
+							letterSpacing = 2,
+						},
+					)
+					if clay.UI(clay.ID("DropDir2"))(
+					{
+						layout = {
+							sizing = {clay.SizingFixed(200), clay.SizingFixed(200)},
+							childAlignment = {x = .Center, y = .Center},
+							// padding = clay.PaddingAll(2),
+							layoutDirection = .TopToBottom,
+						},
+						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
+						cornerRadius = clay.CornerRadiusAll(5),
+					},
+					) {
+						if clay.UI(clay.ID("ImageDir"))(
+						{
+							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
+							image = {imageData = &dir_one},
+						},
+						) {}
+					}
+				}
+			}
 		}
 
+		draw_space(id = "Space2", color = COLOR_LIGHT_LIGHTER)
 
-
-
+		if clay.UI(clay.ID("ScrollContainerBackgroundRectangle"))(
+		{
+			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				// padding = clay.PaddingAll(10),
+				childAlignment = {x = .Center, y = .Top},
+				layoutDirection = .LeftToRight,
+			},
+			backgroundColor = COLOR_LIGHTGRAYGERO_1,
+			border = {COLOR_RED, {betweenChildren = 2}},
+		},
+		) {
+			if clay.UI(clay.ID("Scroll1"))({}) {
+			}
+		}
+		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h = 6)
+		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
+		// draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
+		if clay.UI(clay.ID("Footer"))(
+		{
+			layout = {
+				sizing = {clay.SizingGrow(), clay.SizingFixed(20)},
+				// padding = clay.PaddingAll(10),
+				childAlignment = {x = .Center, y = .Center},
+				layoutDirection = .TopToBottom,
+			},
+			backgroundColor = cast(clay.Color)rl.WHITE,
+			border = {COLOR_RED, {betweenChildren = 2}},
+		},
+		) {
+			clay.Text(
+				"v0.1.0 - Gero Zayas",
+				clay.TextElementConfig {
+					fontId = 8,
+					fontSize = 15,
+					textColor = cast(clay.Color)rl.BROWN,
+					letterSpacing = 2,
+				},
+			)
+		}
 
 	}
+
 	return clay.EndLayout(frametime)
 }
+
+
+/*
+
+
+*/
 
 animationLerpValue: f32 = -1.0
 
@@ -569,7 +638,14 @@ Raylib_Font :: struct {
 raylib_fonts := [dynamic]Raylib_Font{}
 
 load_font :: proc(fontId: u16, fontSize: u16, path: cstring) {
-	assign_at(&raylib_fonts, fontId, Raylib_Font{font = rl.LoadFontEx(path, cast(i32)fontSize * 6, nil, 0), fontId = cast(u16)fontId})
+	assign_at(
+		&raylib_fonts,
+		fontId,
+		Raylib_Font {
+			font = rl.LoadFontEx(path, cast(i32)fontSize * 6, nil, 0),
+			fontId = cast(u16)fontId,
+		},
+	)
 	rl.SetTextureFilter(raylib_fonts[fontId].font.texture, rl.TextureFilter.BILINEAR)
 }
 
@@ -577,9 +653,12 @@ clay_color_to_rl_color :: proc(color: clay.Color) -> rl.Color {
 	return {u8(color.r), u8(color.g), u8(color.b), u8(color.a)}
 }
 
-clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand), allocator := context.temp_allocator){
+clay_raylib_render :: proc(
+	render_commands: ^clay.ClayArray(clay.RenderCommand),
+	allocator := context.temp_allocator,
+) {
 	overlay_colors := make([dynamic]clay.Color, allocator)
-	for i in 0..< render_commands.length {
+	for i in 0 ..< render_commands.length {
 		render_command := clay.RenderCommandArray_Get(render_commands, i)
 		bounds := render_command.boundingBox
 
@@ -590,10 +669,17 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 			text := string(config.stringContents.chars[:config.stringContents.length])
 			cstr_text := strings.clone_to_cstring(text, allocator)
 			font := raylib_fonts[config.fontId].font
-			rl.DrawTextEx(font, cstr_text, {bounds.x, bounds.y}, f32(config.fontSize), f32(config.letterSpacing), clay_color_to_rl_color(config.textColor))
+			rl.DrawTextEx(
+				font,
+				cstr_text,
+				{bounds.x, bounds.y},
+				f32(config.fontSize),
+				f32(config.letterSpacing),
+				clay_color_to_rl_color(config.textColor),
+			)
 
 		case .Image:
-			config:= render_command.renderData.image
+			config := render_command.renderData.image
 			tint: clay.Color
 			if len(overlay_colors) > 0 {
 				tint = overlay_colors[len(overlay_colors) - 1]
@@ -603,17 +689,35 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 			}
 
 			imageTexture := (^rl.Texture2D)(config.imageData)
-			rl.DrawTextureEx(imageTexture^, {bounds.x, bounds.y},0, bounds.width/ f32(imageTexture.width), clay_color_to_rl_color(tint))
+			rl.DrawTextureEx(
+				imageTexture^,
+				{bounds.x, bounds.y},
+				0,
+				bounds.width / f32(imageTexture.width),
+				clay_color_to_rl_color(tint),
+			)
 
 		case .ScissorStart:
-			rl.BeginScissorMode(i32(math.round(bounds.x)), i32(math.round(bounds.y)), i32(math.round(bounds.width)), i32(math.round(bounds.height)))
+			rl.BeginScissorMode(
+				i32(math.round(bounds.x)),
+				i32(math.round(bounds.y)),
+				i32(math.round(bounds.width)),
+				i32(math.round(bounds.height)),
+			)
 		case .ScissorEnd:
 			rl.EndScissorMode()
 		case .Rectangle:
 			config := render_command.renderData.rectangle
 			if config.cornerRadius.topLeft > 0 {
 				radius: f32 = (config.cornerRadius.topLeft * 2) / min(bounds.width, bounds.height)
-				draw_rect_rounded(bounds.x, bounds.y, bounds.width, bounds.height, radius, config.backgroundColor)
+				draw_rect_rounded(
+					bounds.x,
+					bounds.y,
+					bounds.width,
+					bounds.height,
+					radius,
+					config.backgroundColor,
+				)
 			} else {
 				draw_rect(bounds.x, bounds.y, bounds.width, bounds.height, config.backgroundColor)
 			}
@@ -654,7 +758,9 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 				draw_rect(
 					bounds.x + config.cornerRadius.bottomLeft,
 					bounds.y + bounds.height - f32(config.width.bottom),
-					bounds.width - config.cornerRadius.bottomLeft - config.cornerRadius.bottomRight,
+					bounds.width -
+					config.cornerRadius.bottomLeft -
+					config.cornerRadius.bottomRight,
 					f32(config.width.bottom),
 					config.color,
 				)
@@ -669,7 +775,7 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 					config.cornerRadius.topLeft,
 					180, // start angle
 					270, // end angle
-					config.color
+					config.color,
 				)
 			}
 
@@ -681,7 +787,7 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 					config.cornerRadius.topRight,
 					270, // start angle
 					360, // end angle
-					config.color
+					config.color,
 				)
 			}
 
@@ -693,7 +799,7 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 					config.cornerRadius.bottomLeft,
 					90, // start angle
 					180, // end angle
-					config.color
+					config.color,
 				)
 			}
 
@@ -705,7 +811,7 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 					config.cornerRadius.bottomRight,
 					0.1, // start angle
 					90, // end angle
-					config.color
+					config.color,
 				)
 			}
 		case .OverlayColorStart:
@@ -721,22 +827,41 @@ clay_raylib_render :: proc(render_commands : ^clay.ClayArray(clay.RenderCommand)
 	}
 }
 
-draw_rect :: proc(x, y, w, h:f32, color: clay.Color){
-	rl.DrawRectangle(i32(math.round(x)), i32(math.round(y)), i32(math.round(w)), i32(math.round(h)), clay_color_to_rl_color(color))
+draw_rect :: proc(x, y, w, h: f32, color: clay.Color) {
+	rl.DrawRectangle(
+		i32(math.round(x)),
+		i32(math.round(y)),
+		i32(math.round(w)),
+		i32(math.round(h)),
+		clay_color_to_rl_color(color),
+	)
 }
 
-draw_rect_rounded :: proc(x, y, w, h:f32, radius: f32, color: clay.Color) {
+draw_rect_rounded :: proc(x, y, w, h: f32, radius: f32, color: clay.Color) {
 	rl.DrawRectangleRounded({x, y, w, h}, radius, 8, clay_color_to_rl_color(color))
 }
 
-draw_arc :: proc(x, y : f32, inner_rad, outer_rad: f32, start_angle, end_angle: f32, color: clay.Color) {
-	rl.DrawRing({math.round(x), math.round(y)}, math.round(inner_rad), outer_rad, start_angle, end_angle, 10, clay_color_to_rl_color(color))
+draw_arc :: proc(
+	x, y: f32,
+	inner_rad, outer_rad: f32,
+	start_angle, end_angle: f32,
+	color: clay.Color,
+) {
+	rl.DrawRing(
+		{math.round(x), math.round(y)},
+		math.round(inner_rad),
+		outer_rad,
+		start_angle,
+		end_angle,
+		10,
+		clay_color_to_rl_color(color),
+	)
 }
 
 debugModeEnabled: bool = false
 
-screenWidth :i32= 1000
-screenHeight :i32= 800
+screenWidth: i32 = 1000
+screenHeight: i32 = 800
 
 // MAIN - ENTRY POINT
 // ==================
@@ -760,7 +885,11 @@ main :: proc() {
 	min_memory_size := clay.MinMemorySize()
 	memory := make([^]u8, min_memory_size)
 	clay_arena: clay.Arena = clay.CreateArenaWithCapacityAndMemory(uint(min_memory_size), memory)
-	clay.Initialize(clay_arena, {cast(f32)(rl.GetScreenWidth()), cast(f32)(rl.GetScreenHeight())}, {handler=error_handler})
+	clay.Initialize(
+		clay_arena,
+		{cast(f32)(rl.GetScreenWidth()), cast(f32)(rl.GetScreenHeight())},
+		{handler = error_handler},
+	)
 	clay.SetMeasureTextFunction(measure_text, nil)
 	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI})
 
@@ -769,6 +898,7 @@ main :: proc() {
 	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
 
 	geroImage = rl.LoadTexture("assets/images/webcam-toy-foto1.png")
+	dir_one = rl.LoadTexture("assets/images/dir1.png")
 	font_one_path: cstring = "assets/fonts/MPLUSCodeLatin-VariableFont_wdth,wght.ttf"
 	load_font(FONT_ID_TITLE_56, 56, font_one_path)
 	load_font(FONT_ID_TITLE_52, 52, font_one_path)
@@ -795,11 +925,21 @@ main :: proc() {
 			debugModeEnabled = !debugModeEnabled
 			clay.SetDebugModeEnabled(debugModeEnabled)
 		}
-		clay.SetPointerState(transmute(clay.Vector2)rl.GetMousePosition(), rl.IsMouseButtonDown(rl.MouseButton.LEFT))
-		clay.UpdateScrollContainers(false, transmute(clay.Vector2)rl.GetMouseWheelMoveV(), rl.GetFrameTime())
+		clay.SetPointerState(
+			transmute(clay.Vector2)rl.GetMousePosition(),
+			rl.IsMouseButtonDown(rl.MouseButton.LEFT),
+		)
+		clay.UpdateScrollContainers(
+			false,
+			transmute(clay.Vector2)rl.GetMouseWheelMoveV(),
+			rl.GetFrameTime(),
+		)
 		clay.SetLayoutDimensions({cast(f32)rl.GetScreenWidth(), cast(f32)rl.GetScreenHeight()})
 
-		renderCommands := createLayout(animationLerpValue < 0 ? (animationLerpValue + 1) : (1 - animationLerpValue), rl.GetFrameTime())
+		renderCommands := createLayout(
+			animationLerpValue < 0 ? (animationLerpValue + 1) : (1 - animationLerpValue),
+			rl.GetFrameTime(),
+		)
 		// BEGIN DRAWING
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
@@ -810,6 +950,7 @@ main :: proc() {
 	// =============== END OF ACTUAL PROGRAM ===================
 	free_all(arena_alloc)
 	free(clay_arena.memory)
+	delete(raylib_fonts)
 
 	log.destroy_console_logger(context.logger)
 
