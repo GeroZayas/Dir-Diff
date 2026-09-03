@@ -22,7 +22,7 @@
 	],
 	"settings":
 	{
-		"auto_complete": false,
+		"auto_complete": true,
 		"LSP":
 		{
 			"odin":

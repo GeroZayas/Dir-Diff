@@ -369,6 +369,35 @@ ElementDeclaration :: struct {
 
 */
 
+/*
+Clay_TransitionData EnterExitSlideUp(Clay_TransitionData initialState, Clay_TransitionProperty properties) {
+    Clay_TransitionData targetState = initialState;
+    if (properties & CLAY_TRANSITION_PROPERTY_Y) {
+        targetState.boundingBox.y += 20;
+    }
+    if (properties & CLAY_TRANSITION_PROPERTY_OVERLAY_COLOR) {
+        targetState.overlayColor = (Clay_Color) { 255, 255, 255, 255 };
+    }
+    return targetState;
+}
+*/
+
+enter_exit_slide_up :: proc "c"(initial_state: clay.TransitionData, properties: clay.TransitionPropertyFlags) -> clay.TransitionData{
+	target_state := initial_state
+	if .BackgroundColor in properties {
+		target_state.overlayColor = {200, 0, 0, 250}
+	}
+	return target_state
+}
+
+enter_exit_text_gets_smaller :: proc "c"(initial_state: clay.TransitionData, properties: clay.TransitionPropertyFlags) -> clay.TransitionData{
+	target_state := initial_state
+	if .Height && .Width in properties {
+		target_state.boundingBox.height += 50
+	}
+	return target_state
+}
+
 draw_stripe :: proc(id: string, color: clay.Color, w: f32 = 0, h: f32 = 15) {
 	if clay.UI(clay.ID(id))(
 	{
@@ -386,6 +415,29 @@ draw_space :: proc(color: clay.Color, id: string, sizing: f32 = 20) {
 	if clay.UI(clay.ID(id))(
 	{layout = {sizing = {clay.SizingGrow(), clay.SizingFixed(sizing)}}, backgroundColor = color},
 	) {}
+}
+
+fade_out_transition :: proc() -> clay.TransitionElementConfig{
+	transition: clay.TransitionElementConfig ={
+		handler = clay.EaseOut,
+		duration = clay.Hovered() && clay.GetPointerState().state != clay.PointerDataInteractionState.PressedThisFrame ? 0.0 : 0.5,
+		properties = {clay.TransitionPropertyFlags.BackgroundColor},
+		enter = {setInitialState = enter_exit_slide_up },
+		exit =  {setFinalState = enter_exit_slide_up },
+	}
+	return transition
+}
+
+
+fade_in_transition :: proc() -> clay.TransitionElementConfig{
+	transition: clay.TransitionElementConfig ={
+		handler = clay.EaseOut,
+		duration = clay.Hovered() && clay.GetPointerState().state != clay.PointerDataInteractionState.PressedThisFrame ? 1 : 0,
+		properties = {clay.TransitionPropertyFlags.BackgroundColor},
+		enter = {setInitialState = enter_exit_slide_up },
+		exit =  {setFinalState = enter_exit_slide_up },
+	}
+	return transition
 }
 
 createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
@@ -426,7 +478,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		if clay.UI(clay.ID("SubHeaderVersionAndData"))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingFixed(12)},
+				sizing = {clay.SizingGrow(), clay.SizingFixed(8)},
 				padding = clay.PaddingAll(2),
 				childAlignment = {x = .Center, y = .Center},
 			},
@@ -443,12 +495,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = COLOR_RED,
-			transition = {
-				handler = clay.EaseOut,
-				duration = 2,
-				interactionHandling = .AllowInteractionsWhileTransitioningPosition,
-				enter = {},
-			},
+
 		},
 		) {
 			clay.Text(
@@ -465,7 +512,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		// draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
 		// draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
 
-		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 12)
+		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 8)
 
 
 		if clay.UI(clay.ID("OuterDropDirContainer"))(
@@ -521,6 +568,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						cornerRadius = clay.CornerRadiusAll(5),
+						transition = fade_out_transition(),
 					},
 					) {
 						if clay.UI(clay.ID("ImageDir"))(
@@ -560,6 +608,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						cornerRadius = clay.CornerRadiusAll(5),
+						transition = fade_out_transition(),
 					},
 					) {
 						if clay.UI(clay.ID("ImageDir"))(

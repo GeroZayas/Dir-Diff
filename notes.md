@@ -76,3 +76,7 @@ get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
 Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and also note how we allocate to the arena we create it. We're putting everything in the same arena in this case.
 
 ---
+
+### How to drag and drop?
+
+How to open a window for dir selectors?
