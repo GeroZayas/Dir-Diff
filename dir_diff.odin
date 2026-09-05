@@ -1,6 +1,13 @@
-/*
+/* //////////////////////////////////////////////////////////////
+=== UTILS ===
+* Go to https://htmlcolorcodes.com/es/
+To try and conform RGA colors
 
-*/
+
+
+
+*////////////////////////////////////////////////////////////////
+
 
 package dir_diff
 
@@ -223,20 +230,6 @@ ElementDeclaration :: struct {
 */
 
 
-enter_exit_text_gets_smaller :: proc "c" (
-	initial_state: clay.TransitionData,
-	properties: clay.TransitionPropertyFlags,
-) -> clay.TransitionData {
-	target_state := initial_state
-	if .Height in properties {
-		target_state.boundingBox.height += 50
-	}
-	if .Width in properties {
-		target_state.boundingBox.width += 50
-	}
-	return target_state
-}
-
 draw_stripe :: proc(id: string, color: clay.Color, w: f32 = 0, h: f32 = 15) {
 	if clay.UI(clay.ID(id))(
 	{
@@ -257,7 +250,6 @@ draw_space :: proc(color: clay.Color, id: string, sizing: f32 = 20) {
 }
 
 
-// ***
 fade_out_transition :: proc() -> clay.TransitionElementConfig {
 	transition: clay.TransitionElementConfig = {
 		handler    = clay.EaseOut,
@@ -295,6 +287,44 @@ rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
 	}
 	return transition
 
+}
+
+// *** BBB
+lorem_ipsum :: proc() -> (lorem: string) {
+	lorem = `
+	Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
+	In id cursus mi pretium tellus duis convallis. 
+	Tempus leo eu aenean sed diam urna tempor. 
+	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
+	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
+	Ut hendrerit semper vel class aptent taciti sociosqu. 
+	Ad litora torquent per conubia nostra inceptos himenaeos.
+
+		Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
+	In id cursus mi pretium tellus duis convallis. 
+	Tempus leo eu aenean sed diam urna tempor. 
+	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
+	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
+	Ut hendrerit semper vel class aptent taciti sociosqu. 
+	Ad litora torquent per conubia nostra inceptos himenaeos.
+
+		Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
+	In id cursus mi pretium tellus duis convallis. 
+	Tempus leo eu aenean sed diam urna tempor. 
+	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
+	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
+	Ut hendrerit semper vel class aptent taciti sociosqu. 
+	Ad litora torquent per conubia nostra inceptos himenaeos.
+
+			Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
+	In id cursus mi pretium tellus duis convallis. 
+	Tempus leo eu aenean sed diam urna tempor. 
+	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
+	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
+	Ut hendrerit semper vel class aptent taciti sociosqu. 
+	Ad litora torquent per conubia nostra inceptos himenaeos.
+	`
+	return
 }
 
 
@@ -437,6 +467,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							image = {imageData = &dir_one},
 						},
 						) {}
+
 					}
 				}
 				if clay.UI(clay.ID("DropDir2Container"))(
@@ -484,23 +515,56 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 
 		draw_space(id = "Space2", color = COLOR_LIGHT_LIGHTER)
 
-		if clay.UI(clay.ID("ScrollContainerBackgroundRectangle"))(
+		if clay.UI(clay.ID("DirsInfoArea"))(
 		{
-			clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
-				// padding = clay.PaddingAll(10),
 				childAlignment = {x = .Left, y = .Top},
 				layoutDirection = .LeftToRight,
-				padding = {10, 0, 10, 0},
+				padding = {5, 0, 5, 0},
 			},
 			backgroundColor = COLOR_LIGHTGRAYGERO_1,
-			border = {COLOR_RED, {betweenChildren = 2}},
+			border = {COLOR_LIGHT_HOVER, {betweenChildren = 5}},
 		},
 		) {
-			if clay.UI(clay.ID("Scroll1"))({}) {
+
+			if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
+			{ 	//***
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				layout = {
+					sizing = {clay.SizingFixed(cast(f32)(rl.GetScreenWidth())/2), clay.SizingGrow()},
+					childAlignment = {x = .Left, y = .Top},
+					layoutDirection = .LeftToRight,
+					padding = {10, 0, 10, 0},
+				},
+				backgroundColor = COLOR_LIGHT
+			},
+			) {
+				// *** 
+				clay.Text(lorem_ipsum(), {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
+			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
+			{ 	
+				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+				layout = {
+					sizing = {clay.SizingFixed(cast(f32)(rl.GetScreenWidth())/2), clay.SizingGrow()},
+					childAlignment = {x = .Left, y = .Top},
+					layoutDirection = .LeftToRight,
+					padding = {10, 0, 10, 0},
+				},
+				backgroundColor = COLOR_LIGHT
+			},
+			) {
+				// *** 
+				clay.Text(lorem_ipsum(), {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
+			}
+
 		}
+
+
+		// =================================================================
+		// --- Footer Area ---
+		// =================================================================
 		draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h = 6)
 		draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
 		// draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
@@ -798,7 +862,8 @@ main :: proc() {
 	clay.SetMeasureTextFunction(measure_text, nil)
 	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI})
 
-	// =============== START OF ACTUAL PROGRAM ===================
+	// --------------------------- Start of Program ---------------------------
+
 	rl.InitWindow(screenWidth, screenHeight, "DirDiff")
 	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
 
@@ -819,6 +884,8 @@ main :: proc() {
 
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
+
+		// --------------------------- UPDATE ---------------------------
 		animationLerpValue += rl.GetFrameTime()
 		if animationLerpValue > 1 {
 			animationLerpValue = animationLerpValue - 2
@@ -845,14 +912,16 @@ main :: proc() {
 			animationLerpValue < 0 ? (animationLerpValue + 1) : (1 - animationLerpValue),
 			rl.GetFrameTime(),
 		)
-		// BEGIN DRAWING
+
+		// --------------------------- DRAW ---------------------------
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 		clay_raylib_render(&renderCommands)
 		rl.EndDrawing()
 	}
 
-	// =============== END OF ACTUAL PROGRAM ===================
+	// --------------------------- End of Program ---------------------------
+
 	free_all(arena_alloc)
 	free(clay_arena.memory)
 	delete(raylib_fonts)
