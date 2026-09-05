@@ -56,6 +56,7 @@ COLOR_BROWN :: clay.Color{61, 26, 5, 255}
 COLOR_RED :: clay.Color{168, 66, 28, 255}
 COLOR_RED_HOVER :: clay.Color{148, 46, 8, 255}
 COLOR_ORANGE :: clay.Color{225, 138, 50, 255}
+COLOR_ORANGE_BRIGHTER :: clay.Color{250, 138, 50, 255}
 COLOR_BLUE :: clay.Color{111, 173, 162, 255}
 COLOR_TEAL :: clay.Color{111, 173, 162, 255}
 COLOR_BLUE_DARK :: clay.Color{2, 32, 82, 255}
@@ -80,126 +81,6 @@ DirectoryInfo :: struct {
 
 // PROCEDURES
 // ===========
-
-/*
-Returns a DirectoryInfo struct
-*/
-get_array_file_names :: proc(
-	dir_path: string,
-	print_file_names: bool = false,
-	arena_alloc: mem.Allocator,
-) -> DirectoryInfo {
-	files_info_array, err := os.read_all_directory_by_path(dir_path, arena_alloc)
-
-	files_array := make([dynamic]os.File_Info, arena_alloc)
-
-	for elem in files_info_array {
-		if elem.type == .Directory {
-			continue
-		}
-		append(&files_array, elem)
-	}
-
-	total_files := len(files_array)
-
-	// BASE for name of dir
-	dir_name := os.base(dir_path)
-
-	if print_file_names {
-		for file in files_array {
-			print("=============================")
-			print(file.name)
-		}
-	}
-
-	abs_path, _ := os.get_absolute_path(dir_path, arena_alloc)
-
-	dir_info := DirectoryInfo {
-		name_dir    = dir_name,
-		total_files = total_files,
-		files_array = files_array,
-		path        = abs_path,
-	}
-
-	return dir_info
-
-}
-
-return_big_then_small_dir :: proc(
-	dir_a, dir_b: DirectoryInfo,
-	allocator: mem.Allocator,
-) -> [2]DirectoryInfo {
-
-	res := "The directory with more files is: "
-
-	if dir_a.total_files >= dir_b.total_files {
-		res = strings.concatenate({res, dir_a.name_dir}, allocator = allocator)
-
-		printf("%v%v with %v files %v", visuals.BOLD_YELLOW, res, dir_a.total_files, visuals.RESET)
-		return {dir_a, dir_b}
-	} else {
-		res = strings.concatenate({res, dir_b.name_dir}, allocator = allocator)
-		printf("%v%v with %v files %v", visuals.BOLD_YELLOW, res, dir_b.total_files, visuals.RESET)
-		return {dir_b, dir_a}
-	}
-}
-
-/*
-Returns a [2]DirectoryInfo with the info from the dirs given as input paths
-*/
-get_paths_dirs :: proc(debug: bool, arena_alloc: mem.Allocator) -> [2]DirectoryInfo {
-	path1_str := new(string, arena_alloc)
-	path2_str := new(string, arena_alloc)
-	// FOR testing and debugging only:
-	if debug {
-		path1_str^ = "/Users/gero/Documents/Coding/Odin-Programs/dir-diff/foo"
-		path2_str^ = "/Users/gero/Documents/Coding/Odin-Programs/dir-diff/bar"
-	} else {
-		buffer: [1024]byte
-		// get input from the user
-		print("Insert DIR 1 FULL PATH: ")
-		path1, err_1 := os.read(os.stdin, buffer[:])
-		if err_1 != nil {
-			fmt.eprintln("ERROR with PATH 1:", err_1)
-			panic("ERROR with PATH 1")
-		}
-		path1_str^ = string(buffer[:path1])
-		path1_str^ = strings.trim_right(path1_str^, "\n")
-		if !os.is_directory(path1_str^) {
-			print(path1_str^, "is not a DIRECTORY")
-		}
-
-		print("Insert DIR 2 FULL PATH: ")
-		path2, err_2 := os.read(os.stdin, buffer[path1:])
-		if err_2 != nil {
-			fmt.eprintln("ERROR with PATH 2:", err_2)
-			panic("ERROR with PATH 2")
-		}
-		path2_str^ = string(buffer[path1:path1 + path2])
-		path2_str^ = strings.trim_right(path2_str^, "\n")
-		assert(os.is_directory(path2_str^), "PATH is not a directory")
-	}
-
-	path1_dir := new(DirectoryInfo, arena_alloc)
-	path2_dir := new(DirectoryInfo, arena_alloc)
-
-	path1_dir^ = get_array_file_names(path1_str^, arena_alloc = arena_alloc)
-	path2_dir^ = get_array_file_names(path2_str^, arena_alloc = arena_alloc)
-
-	// TODO(gero) Check this in the future:
-	// NOTE: we do assume, for the time being, that the biggest dir is the one containing duplicates
-	// BUT this is not necessarily the case always
-
-	big_then_small_dirs_array: [2]DirectoryInfo = return_big_then_small_dir(
-		path1_dir^,
-		path2_dir^,
-		allocator = arena_alloc,
-	)
-	printf("Biggest DIR: %v", big_then_small_dirs_array[0].name_dir)
-	printf("Biggest DIR Path: %v", big_then_small_dirs_array[0].path)
-
-	return big_then_small_dirs_array
-}
 
 find_duplicates_in_two_dirs :: proc(
 	dir_a, dir_b: DirectoryInfo,
@@ -241,34 +122,6 @@ find_duplicates_in_two_dirs :: proc(
 	print("===========================================")
 
 	return duplicates
-}
-
-get_user_input :: proc(prompt_message: string, allocator: mem.Allocator) -> string {
-	print(prompt_message)
-	buffer: [256]byte
-	user_input, input_err := os.read(os.stdin, buffer[:])
-	assert(input_err == nil)
-	user_input_str := strings.clone_from_bytes(buffer[:user_input], allocator)
-	return user_input_str
-}
-
-
-clean_user_input :: proc(user_input: string, allocator: mem.Allocator) -> string {
-	res := strings.trim_right(strings.to_lower(user_input, allocator), "\n") // note you have to trim it
-	return res
-}
-
-print_all_duplicates :: proc(dups: [dynamic]string) {
-	print("DUPLICATES ARE:")
-	print("========================================")
-	printf("TOTAL: %i", len(dups))
-	print("========================================")
-	for dup, index in dups {
-		if dup != "" {
-			printf("%i ==> %s", index + 1, dup)
-		}
-	}
-	print("========================================")
 }
 
 get_center_text :: proc(width, height: f32, text: cstring, text_fs: int) -> rl.Vector2 {
@@ -369,31 +222,17 @@ ElementDeclaration :: struct {
 
 */
 
-/*
-Clay_TransitionData EnterExitSlideUp(Clay_TransitionData initialState, Clay_TransitionProperty properties) {
-    Clay_TransitionData targetState = initialState;
-    if (properties & CLAY_TRANSITION_PROPERTY_Y) {
-        targetState.boundingBox.y += 20;
-    }
-    if (properties & CLAY_TRANSITION_PROPERTY_OVERLAY_COLOR) {
-        targetState.overlayColor = (Clay_Color) { 255, 255, 255, 255 };
-    }
-    return targetState;
-}
-*/
 
-enter_exit_slide_up :: proc "c"(initial_state: clay.TransitionData, properties: clay.TransitionPropertyFlags) -> clay.TransitionData{
+enter_exit_text_gets_smaller :: proc "c" (
+	initial_state: clay.TransitionData,
+	properties: clay.TransitionPropertyFlags,
+) -> clay.TransitionData {
 	target_state := initial_state
-	if .BackgroundColor in properties {
-		target_state.overlayColor = {200, 0, 0, 250}
-	}
-	return target_state
-}
-
-enter_exit_text_gets_smaller :: proc "c"(initial_state: clay.TransitionData, properties: clay.TransitionPropertyFlags) -> clay.TransitionData{
-	target_state := initial_state
-	if .Height && .Width in properties {
+	if .Height in properties {
 		target_state.boundingBox.height += 50
+	}
+	if .Width in properties {
+		target_state.boundingBox.width += 50
 	}
 	return target_state
 }
@@ -417,28 +256,47 @@ draw_space :: proc(color: clay.Color, id: string, sizing: f32 = 20) {
 	) {}
 }
 
-fade_out_transition :: proc() -> clay.TransitionElementConfig{
-	transition: clay.TransitionElementConfig ={
-		handler = clay.EaseOut,
-		duration = clay.Hovered() && clay.GetPointerState().state != clay.PointerDataInteractionState.PressedThisFrame ? 0.0 : 0.5,
+
+// ***
+fade_out_transition :: proc() -> clay.TransitionElementConfig {
+	transition: clay.TransitionElementConfig = {
+		handler    = clay.EaseOut,
+		duration   = clay.Hovered() && clay.GetPointerState().state != clay.PointerDataInteractionState.PressedThisFrame ? 0.8 : 0.5,
 		properties = {clay.TransitionPropertyFlags.BackgroundColor},
-		enter = {setInitialState = enter_exit_slide_up },
-		exit =  {setFinalState = enter_exit_slide_up },
 	}
 	return transition
 }
 
+foo :: proc "c" (
+	initial_state: clay.TransitionData,
+	properties: clay.TransitionPropertyFlags,
+) -> clay.TransitionData {
+	target: clay.TransitionData
+	if .BackgroundColor in properties {
+		target = {
+			boundingBox     = {100, 100, 100, 100},
+			backgroundColor = COLOR_RED,
+			overlayColor    = COLOR_BLUE,
+			borderColor     = COLOR_ORANGE,
+			borderWidth     = {3, 3, 3, 3, 3},
+		}
+	}
 
-fade_in_transition :: proc() -> clay.TransitionElementConfig{
-	transition: clay.TransitionElementConfig ={
-		handler = clay.EaseOut,
-		duration = clay.Hovered() && clay.GetPointerState().state != clay.PointerDataInteractionState.PressedThisFrame ? 1 : 0,
-		properties = {clay.TransitionPropertyFlags.BackgroundColor},
-		enter = {setInitialState = enter_exit_slide_up },
-		exit =  {setFinalState = enter_exit_slide_up },
+	return target
+}
+
+rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
+	transition: clay.TransitionElementConfig
+	transition = {
+		handler             = clay.EaseOut,
+		duration            = 0.2,
+		properties          = {.Width, .BackgroundColor, .Height},
+		interactionHandling = .AllowInteractionsWhileTransitioningPosition,
 	}
 	return transition
+
 }
+
 
 createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
 	clay.BeginLayout()
@@ -462,7 +320,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				padding = clay.PaddingAll(10),
 				childAlignment = {x = .Center, y = .Center},
 			},
-			backgroundColor = COLOR_ORANGE,
+			backgroundColor = clay.Hovered() ? COLOR_ORANGE_BRIGHTER : COLOR_ORANGE,
+			transition = {handler = clay.EaseOut, duration = 0.5, properties = {.BackgroundColor}},
 		},
 		) {
 			clay.Text(
@@ -495,15 +354,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				childAlignment = {x = .Center, y = .Center},
 			},
 			backgroundColor = COLOR_RED,
-
 		},
 		) {
 			clay.Text(
 				"Compare Dirs - Manage Duplicates",
 				clay.TextElementConfig {
-					fontId = 8,
-					fontSize = clay.Hovered() ? 22 : 20,
-					textColor = cast(clay.Color)rl.RAYWHITE,
+					fontId        = 8,
+					// fontSize = clay.Hovered() ? 22 : 20,
+					fontSize      = 20,
+					textColor     = cast(clay.Color)rl.RAYWHITE,
 					letterSpacing = 2,
 				},
 			)
@@ -566,6 +425,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							// padding = clay.PaddingAll(2),
 							layoutDirection = .TopToBottom,
 						},
+						// backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						cornerRadius = clay.CornerRadiusAll(5),
 						transition = fade_out_transition(),
@@ -630,8 +490,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				// padding = clay.PaddingAll(10),
-				childAlignment = {x = .Center, y = .Top},
+				childAlignment = {x = .Left, y = .Top},
 				layoutDirection = .LeftToRight,
+				padding = {10, 0, 10, 0},
 			},
 			backgroundColor = COLOR_LIGHTGRAYGERO_1,
 			border = {COLOR_RED, {betweenChildren = 2}},
@@ -671,11 +532,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 	return clay.EndLayout(frametime)
 }
 
-
-/*
-
-
-*/
 
 animationLerpValue: f32 = -1.0
 

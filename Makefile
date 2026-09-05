@@ -1,5 +1,5 @@
 run:
-	odin run .
+	clear && odin run .
 
 run-debug:
 	clear && make debug && ./debug_build-main_odin
