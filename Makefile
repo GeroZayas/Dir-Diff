@@ -8,10 +8,10 @@ build:
 	odin build .
 
 debug:
-	odin build . -debug -out:debug_build-main_odin
+	odin build . -debug -o:none
 
 clean:
-	rm -rf ./debug_build-main_odin.dSYM ./dir-diff.dSYM ./debug_build-main_odin
+	rm -rf ./debug_build-main_odin.dSYM ./dir_diff.dSYM ./dir-diff.dSYM ./debug_build-main_odin
 
 
 git:

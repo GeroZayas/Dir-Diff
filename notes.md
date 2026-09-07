@@ -80,3 +80,8 @@ Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and 
 ### How to drag and drop?
 
 How to open a window for dir selectors?
+
+
+
+
+

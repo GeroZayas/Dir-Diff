@@ -74,6 +74,8 @@ COLOR_BLACK :: clay.Color{0, 0, 0, 255}
 geroImage: rl.Texture2D = {}
 dir_one: rl.Texture2D = {}
 
+// ***
+list_files_dropped: [dynamic]cstring
 
 // STRUCTS
 // =========
@@ -289,7 +291,7 @@ rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
 
 }
 
-// *** BBB
+
 lorem_ipsum :: proc() -> (lorem: string) {
 	lorem = `
 	Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
@@ -461,12 +463,30 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						transition = fade_out_transition(),
 					},
 					) {
+						// ***
 						if clay.UI(clay.ID("ImageDir"))(
 						{
 							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
 							image = {imageData = &dir_one},
 						},
 						) {}
+
+						files: rl.FilePathList
+						if rl.IsFileDropped() {
+							files = rl.LoadDroppedFiles() // ***
+							fmt.println("======== FILES LOADED ========")
+							fmt.println(files)
+							files_paths := files.paths
+							i: u32 = 0
+							for i < files.count {
+								fmt.println(files_paths[i])
+								append(&list_files_dropped, files_paths[i])
+								i += 1
+							}
+							fmt.println("======== FILES ADDED to list_files_dropped ========")
+							rl.UnloadDroppedFiles(files)
+							fmt.println("======== FILES UNLOADED ========")
+						}
 
 					}
 				}
@@ -529,34 +549,48 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		) {
 
 			if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
-			{ 	//***
+			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				layout = {
-					sizing = {clay.SizingFixed(cast(f32)(rl.GetScreenWidth())/2), clay.SizingGrow()},
+					sizing = {
+						clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+						clay.SizingGrow(),
+					},
 					childAlignment = {x = .Left, y = .Top},
 					layoutDirection = .LeftToRight,
 					padding = {10, 0, 10, 0},
 				},
-				backgroundColor = COLOR_LIGHT
+				backgroundColor = COLOR_LIGHT,
 			},
 			) {
-				// *** 
-				clay.Text(lorem_ipsum(), {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
+
+				clay.Text(
+					lorem_ipsum(),
+					{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
+				)
 			}
 			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
-			{ 	
+			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				layout = {
-					sizing = {clay.SizingFixed(cast(f32)(rl.GetScreenWidth())/2), clay.SizingGrow()},
+					sizing = {
+						clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+						clay.SizingGrow(),
+					},
 					childAlignment = {x = .Left, y = .Top},
 					layoutDirection = .LeftToRight,
 					padding = {10, 0, 10, 0},
 				},
-				backgroundColor = COLOR_LIGHT
+				backgroundColor = COLOR_LIGHT,
 			},
 			) {
-				// *** 
-				clay.Text(lorem_ipsum(), {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
+				// ***
+				// text_to_put : string 
+				clay.Text(
+					// lorem_ipsum() ? len(list_files_dropped) == 0 : list_files_dropped,
+					lorem_ipsum(),
+					{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
+				)
 			}
 
 		}
