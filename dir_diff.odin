@@ -48,6 +48,12 @@ COLOR_TOP_BORDER_3 :: clay.Color{225, 138, 50, 255}
 COLOR_TOP_BORDER_4 :: clay.Color{236, 189, 80, 255}
 COLOR_TOP_BORDER_5 :: clay.Color{240, 213, 137, 255}
 
+// AAA
+COLOR_RL_RED := cast(clay.Color)rl.RED // { 230, 41, 55, 255 }
+COLOR_RL_RED_LOW_ALPHA := clay.Color{255, 250, 250, 255}
+COLOR_RL_BLUE := cast(clay.Color)rl.BLUE // { 0, 121, 241, 255 }
+COLOR_RL_BLUE_LOW_ALPHA := clay.Color{247, 251, 255, 255}
+
 COLOR_LIGHT :: clay.Color{244, 235, 230, 255}
 COLOR_LIGHT_LIGHTER :: clay.Color{230, 225, 225, 255}
 COLOR_LIGHTGRAYGERO_1 :: clay.Color{0, 0, 0, 255 * 0.1}
@@ -409,6 +415,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 8)
 
 
+		draw_space(id = "Space2", color = COLOR_LIGHT)
+
+
 		if clay.UI(clay.ID("OuterDropDirContainer"))(
 		{
 			layout = {
@@ -423,16 +432,17 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			if clay.UI(clay.ID("DropDirContainer"))(
 			{
 				layout = {
-					sizing = {clay.SizingFixed(550), clay.SizingFixed(280)},
+					sizing = {clay.SizingFixed(650), clay.SizingFixed(280)},
 					padding = clay.PaddingAll(5),
 					childAlignment = {x = .Center, y = .Center},
 					layoutDirection = .LeftToRight,
-					childGap = 20,
+					childGap = 10,
 				},
 				backgroundColor = cast(clay.Color)rl.WHITE,
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
+
 				if clay.UI(clay.ID("DropDir1Container"))(
 				{
 					layout = {
@@ -448,7 +458,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						clay.TextElementConfig {
 							fontId = 8,
 							fontSize = 18,
-							textColor = cast(clay.Color)rl.RED,
+							textColor = COLOR_RL_RED,
 							letterSpacing = 2,
 						},
 					)
@@ -515,6 +525,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 
 					}
 				}
+
 				if clay.UI(clay.ID("DropDir2Container"))(
 				{
 					layout = {
@@ -530,7 +541,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						clay.TextElementConfig {
 							fontId = 8,
 							fontSize = 18,
-							textColor = cast(clay.Color)rl.BLUE,
+							textColor = COLOR_RL_BLUE,
 							letterSpacing = 2,
 						},
 					)
@@ -597,7 +608,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			}
 		}
 
-		draw_space(id = "Space2", color = COLOR_LIGHT_LIGHTER)
+		draw_space(id = "Space2", color = COLOR_LIGHT)
+
+		draw_space(id = "AboveDirsPathsArea", color = COLOR_LIGHT_HOVER, sizing = 5)
 
 		if clay.UI(clay.ID("DirsInfoArea"))(
 		{
@@ -605,13 +618,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				sizing = {clay.SizingGrow(), clay.SizingGrow()},
 				childAlignment = {x = .Left, y = .Top},
 				layoutDirection = .LeftToRight,
-				padding = {5, 0, 5, 0},
+				padding = {0, 0, 0, 0},
 			},
-			backgroundColor = COLOR_LIGHTGRAYGERO_1,
+			backgroundColor = COLOR_LIGHT_HOVER,
+			// backgroundColor = cast(clay.Color)rl.WHITE,
+
 			border = {COLOR_LIGHT_HOVER, {betweenChildren = 5}},
 		},
 		) {
-
+			// AAA
 			if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
 			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
@@ -624,7 +639,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					layoutDirection = .LeftToRight,
 					padding = {10, 0, 10, 0},
 				},
-				backgroundColor = COLOR_LIGHT,
+				backgroundColor = COLOR_RL_RED_LOW_ALPHA,
+				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
 
@@ -640,6 +656,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
+			// AAA
 			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
 			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
@@ -652,7 +669,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					layoutDirection = .LeftToRight,
 					padding = {10, 0, 10, 0},
 				},
-				backgroundColor = COLOR_LIGHT,
+				backgroundColor = COLOR_RL_BLUE_LOW_ALPHA,
+				cornerRadius = clay.CornerRadiusAll(5),
+
 			},
 			) {
 				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
