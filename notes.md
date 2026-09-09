@@ -76,6 +76,35 @@ get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
 Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and also note how we allocate to the arena we create it. We're putting everything in the same arena in this case.
 
 ---
+### Important when working with cstring:
+It is better to import `strings` and do `strings.clone_from_ctring(the_cstring)` than trying to cast it, because it can look very weird.
+
+---
+### On Using `strings.join()` and the context.temp_allocator
+
+I have seen that one can get growing allocations because of the main loop when doing the `strings.join()` like in here:
+
+```odin 
+{
+	if len(list_files_dropped) == 0 { 
+		text_to_put = lorem_ipsum()
+	} else {
+		text_to_put = strings.join(list_files_dropped[:], "\n", allocator=context.temp_allocator)
+	}
+	clay.Text(
+		text_to_put,
+		// lorem_ipsum(),
+		{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
+	)
+}
+```
+But the **problem** was that I was declaring and asigning to `text_to_put` right in there and if I was suign this `allocator=context.temp_allocator` then it would be wiped out per frame, so it would not show.
+
+The **solution** has been just declaring `text_to_put` as a global, taking it out of the stack. This way you asign to it per frame.
+
+ 
+---
+# Exploring Gero
 
 ### How to drag and drop?
 

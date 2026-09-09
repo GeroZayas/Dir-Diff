@@ -75,7 +75,9 @@ geroImage: rl.Texture2D = {}
 dir_one: rl.Texture2D = {}
 
 // ***
-list_files_dropped: [dynamic]cstring
+list_files_dropped: [dynamic]string
+text_to_put: string
+
 
 // STRUCTS
 // =========
@@ -473,14 +475,17 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 
 						files: rl.FilePathList
 						if rl.IsFileDropped() {
-							files = rl.LoadDroppedFiles() // ***
+							files = rl.LoadDroppedFiles() 
 							fmt.println("======== FILES LOADED ========")
 							fmt.println(files)
 							files_paths := files.paths
 							i: u32 = 0
 							for i < files.count {
 								fmt.println(files_paths[i])
-								append(&list_files_dropped, files_paths[i])
+								append(
+									&list_files_dropped,
+									strings.clone_from_cstring(files_paths[i]), 
+								) // ***
 								i += 1
 							}
 							fmt.println("======== FILES ADDED to list_files_dropped ========")
@@ -585,10 +590,13 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			},
 			) {
 				// ***
-				// text_to_put : string 
+				if len(list_files_dropped) == 0 { 
+					text_to_put = lorem_ipsum()
+				} else {
+					text_to_put = strings.join(list_files_dropped[:], "\n", allocator=context.temp_allocator)
+				}
 				clay.Text(
-					// lorem_ipsum() ? len(list_files_dropped) == 0 : list_files_dropped,
-					lorem_ipsum(),
+					text_to_put,
 					{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
 				)
 			}
@@ -896,6 +904,7 @@ main :: proc() {
 	clay.SetMeasureTextFunction(measure_text, nil)
 	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI})
 
+
 	// --------------------------- Start of Program ---------------------------
 
 	rl.InitWindow(screenWidth, screenHeight, "DirDiff")
@@ -959,13 +968,16 @@ main :: proc() {
 	free_all(arena_alloc)
 	free(clay_arena.memory)
 	delete(raylib_fonts)
+	delete(list_files_dropped)
+	// delete(text_to_put)
 
 	log.destroy_console_logger(context.logger)
 
 	if len(track.allocation_map) > 0 {
 		fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
 		for _, entry in track.allocation_map {
-			fmt.eprintf("- %v bytes @ %v\n", entry.size, entry.location)
+			fmt.eprintf("- %v bytes @ \n", entry.size)
+			fmt.eprintf("%v\n", entry.location)
 		}
 	} else {
 		fmt.println("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
