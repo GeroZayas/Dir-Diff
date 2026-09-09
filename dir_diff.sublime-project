@@ -1,0 +1,55 @@
+{
+	"folders":
+	[
+		{
+			"path": ".",
+		},
+		{
+			"path": "/Users/gero/odin-macos-arm64-nightly+2026-09-01/vendor",
+		},
+		{
+			"path": "/Users/gero/odin-macos-arm64-nightly+2026-09-01/core",
+		},
+		{
+			"path": "/Users/gero/odin-macos-arm64-nightly+2026-09-01/base"
+		},
+	],
+	"settings":
+	{
+		"SublimeAnarchyDebug":
+		{
+			"breakpoints":
+			[
+				{
+					"condition": null,
+					"enabled": true,
+					"file": "/Users/gero/Documents/Coding/Odin-Programs/dir_diff/dir_diff.odin",
+					"ignore_count": 0,
+					"line": 330,
+				}
+			],
+		},
+		"LSP":
+		{
+			"odin":
+			{
+				"enabled": true,
+			},
+			"clients":
+			{
+				"enabled": true,
+			},
+		},
+	},
+	"debugger_configurations":
+	[
+		{
+			"type": "lldb",
+			"request": "launch",
+			"name": "Launch",
+			"program": "${folder}/dir_diff",
+			"args": [],
+			"cwd": "${folder}",
+		},
+	],
+}
