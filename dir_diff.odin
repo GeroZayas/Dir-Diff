@@ -74,7 +74,8 @@ printf :: fmt.printfln
 geroImage: rl.Texture2D = {}
 dir_one: rl.Texture2D = {}
 
-list_files_dropped: [dynamic]string
+list_files_dropped_dir1: [dynamic]string
+list_files_dropped_dir2: [dynamic]string
 text_to_put: string
 files: rl.FilePathList
 
@@ -479,8 +480,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						// fmt.printprintlnpointer_data)
 						dropDir1ElementData := clay.GetElementData(clay.ID("DropDir1"))
 
-						print("dropDir1ElementData:")
-						print(dropDir1ElementData)
+						// print("dropDir1ElementData:")
+						// print(dropDir1ElementData)
 						dropDir1ElementDataRec := rl.Rectangle {
 							dropDir1ElementData.boundingBox.x,
 							dropDir1ElementData.boundingBox.y,
@@ -492,8 +493,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir1ElementDataRec,
 						) {
-							print("INSIDE dropDir1ElementDataRec")
-
 							if rl.IsFileDropped() {
 								files = rl.LoadDroppedFiles()
 								print("======== FILES LOADED ========")
@@ -502,12 +501,12 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 								for i < files.count {
 									print(files.paths[i])
 									append(
-										&list_files_dropped,
+										&list_files_dropped_dir1,
 										strings.clone_from_cstring(files.paths[i]),
 									)
 									i += 1
 								}
-								print("======== FILES ADDED to list_files_dropped ========")
+								print("======== FILES ADDED to list_files_dropped_dir1 ========")
 								rl.UnloadDroppedFiles(files)
 								print("======== FILES UNLOADED ========")
 							}
@@ -555,7 +554,44 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						) {}
 
-						// *** Get element ID
+						// *** GET POINTER DATA LOGIC
+
+						pointer_data := clay.GetPointerState()
+						// fmt.printprintlnpointer_data)
+						dropDir2ElementData := clay.GetElementData(clay.ID("DropDir2"))
+
+						// print("dropDir2ElementData:")
+						// print(dropDir2ElementData)
+						dropDir2ElementDataRec := rl.Rectangle {
+							dropDir2ElementData.boundingBox.x,
+							dropDir2ElementData.boundingBox.y,
+							dropDir2ElementData.boundingBox.width,
+							dropDir2ElementData.boundingBox.height,
+						}
+
+						if rl.CheckCollisionPointRec(
+							pointer_data.position,
+							dropDir2ElementDataRec,
+						) {
+							if rl.IsFileDropped() {
+								files = rl.LoadDroppedFiles()
+								print("======== FILES LOADED ========")
+								print(files)
+								i: u32 = 0
+								for i < files.count {
+									print(files.paths[i])
+									append(
+										&list_files_dropped_dir2,
+										strings.clone_from_cstring(files.paths[i]),
+									)
+									i += 1
+								}
+								print("======== FILES ADDED to list_files_dropped_dir2 ========")
+								rl.UnloadDroppedFiles(files)
+								print("======== FILES UNLOADED ========")
+							}
+						}
+
 					}
 				}
 			}
@@ -592,10 +628,17 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			},
 			) {
 
-				clay.Text(
-					lorem_ipsum(),
-					{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
-				)
+				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
+				if len(list_files_dropped_dir1) == 0 {
+					text_to_put = lorem_ipsum()
+				} else {
+					text_to_put = strings.join(
+						list_files_dropped_dir1[:],
+						"\n",
+						allocator = context.temp_allocator,
+					)
+				}
+				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
 			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
 			{
@@ -613,11 +656,11 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			},
 			) {
 				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
-				if len(list_files_dropped) == 0 {
+				if len(list_files_dropped_dir2) == 0 {
 					text_to_put = lorem_ipsum()
 				} else {
 					text_to_put = strings.join(
-						list_files_dropped[:],
+						list_files_dropped_dir2[:],
 						"\n",
 						allocator = context.temp_allocator,
 					)
@@ -990,7 +1033,10 @@ main :: proc() {
 	// --------------------------- End of Program ---------------------------
 
 	print("=========================================")
-	for str in list_files_dropped {
+	for str in list_files_dropped_dir1 {
+		delete(str)
+	}
+	for str in list_files_dropped_dir2 {
 		delete(str)
 	}
 	print("=========================================")
@@ -999,7 +1045,8 @@ main :: proc() {
 	free_all(arena_alloc)
 	free(clay_arena.memory)
 	delete(raylib_fonts)
-	delete(list_files_dropped)
+	delete(list_files_dropped_dir1)
+	delete(list_files_dropped_dir2)
 
 	log.destroy_console_logger(context.logger)
 
