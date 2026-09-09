@@ -48,7 +48,7 @@ COLOR_TOP_BORDER_3 :: clay.Color{225, 138, 50, 255}
 COLOR_TOP_BORDER_4 :: clay.Color{236, 189, 80, 255}
 COLOR_TOP_BORDER_5 :: clay.Color{240, 213, 137, 255}
 
-// AAA
+
 COLOR_RL_RED := cast(clay.Color)rl.RED // { 230, 41, 55, 255 }
 COLOR_RL_RED_LOW_ALPHA := clay.Color{255, 250, 250, 255}
 COLOR_RL_BLUE := cast(clay.Color)rl.BLUE // { 0, 121, 241, 255 }
@@ -83,8 +83,12 @@ dir_one: rl.Texture2D = {}
 list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
 text_to_put: string
+files_path_list: rl.FilePathList
 files: rl.FilePathList
-
+file_drop_error: bool //***
+is_dir: bool
+dir_1_path: cstring
+dir_2_path: cstring
 
 // STRUCTS
 // =========
@@ -505,25 +509,50 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						) {
 							if rl.IsFileDropped() {
 								files = rl.LoadDroppedFiles()
-								print("======== FILES LOADED ========")
-								print(files)
-								i: u32 = 0
-								for i < files.count {
-									print(files.paths[i])
-									append(
-										&list_files_dropped_dir1,
-										strings.clone_from_cstring(files.paths[i]),
-									)
-									i += 1
+								if files.count > 1 {
+									rl.UnloadDroppedFiles(files)
+									file_drop_error = true
+									print("ERROR - More than one file")
+								} else {
+									file_drop_error = false
 								}
-								print("======== FILES ADDED to list_files_dropped_dir1 ========")
-								rl.UnloadDroppedFiles(files)
-								print("======== FILES UNLOADED ========")
+
+								if !file_drop_error {
+									is_dir = !rl.IsPathFile(files.paths[0]) //***
+									print("Is DIR?", is_dir)
+									dir_1_path = files.paths[0]
+								}
+
+								if is_dir {
+									print("======== DIR LOADED ========")
+									print("files:", files)
+									files_path_list = rl.LoadDirectoryFiles(dir_1_path)
+									print("files_path_list:", files_path_list)
+									i: u32 = 0
+									for i < files_path_list.count {
+										print(files_path_list.paths[i])
+										append(
+											&list_files_dropped_dir1,
+											strings.clone_from_cstring(files_path_list.paths[i]),
+										)
+										i += 1
+									}
+									print("======== DIR ADDED to list_files_dropped_dir1 ========")
+									rl.UnloadDroppedFiles(files)
+									rl.UnloadDroppedFiles(files_path_list)
+									print("======== FILES UNLOADED ========")
+								} else {
+									rl.UnloadDroppedFiles(files)
+								}
+
+
 							}
 						}
-
-
 					}
+				}
+
+				if file_drop_error {
+					rl.DrawRectangleV({100, 100}, {200, 200}, rl.WHITE)
 				}
 
 				if clay.UI(clay.ID("DropDir2Container"))(
@@ -586,20 +615,42 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						) {
 							if rl.IsFileDropped() {
 								files = rl.LoadDroppedFiles()
-								print("======== FILES LOADED ========")
-								print(files)
-								i: u32 = 0
-								for i < files.count {
-									print(files.paths[i])
-									append(
-										&list_files_dropped_dir2,
-										strings.clone_from_cstring(files.paths[i]),
-									)
-									i += 1
+								if files.count > 1 {
+									rl.UnloadDroppedFiles(files)
+									file_drop_error = true
+									print("ERROR - More than one file")
+								} else {
+									file_drop_error = false
 								}
-								print("======== FILES ADDED to list_files_dropped_dir2 ========")
-								rl.UnloadDroppedFiles(files)
-								print("======== FILES UNLOADED ========")
+
+								if !file_drop_error {
+									is_dir = !rl.IsPathFile(files.paths[0]) //***
+									print("Is DIR?", is_dir)
+									dir_2_path = files.paths[0]
+								}
+
+								if is_dir {
+									print("======== DIR LOADED ========")
+									print("files:", files)
+									files_path_list = rl.LoadDirectoryFiles(dir_2_path)
+									print("files_path_list:", files_path_list)
+									i: u32 = 0
+									for i < files_path_list.count {
+										print(files_path_list.paths[i])
+										append(
+											&list_files_dropped_dir2,
+											strings.clone_from_cstring(files_path_list.paths[i]),
+										)
+										i += 1
+									}
+									print("======== DIR ADDED to list_files_dropped_dir1 ========")
+									rl.UnloadDroppedFiles(files)
+									rl.UnloadDroppedFiles(files_path_list)
+									print("======== FILES UNLOADED ========")
+								} else {
+									rl.UnloadDroppedFiles(files)
+								}
+
 							}
 						}
 
@@ -622,11 +673,10 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			},
 			backgroundColor = COLOR_LIGHT_HOVER,
 			// backgroundColor = cast(clay.Color)rl.WHITE,
-
 			border = {COLOR_LIGHT_HOVER, {betweenChildren = 5}},
 		},
 		) {
-			// AAA
+
 			if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
 			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
@@ -656,7 +706,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
-			// AAA
+
 			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
 			{
 				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
@@ -671,7 +721,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				},
 				backgroundColor = COLOR_RL_BLUE_LOW_ALPHA,
 				cornerRadius = clay.CornerRadiusAll(5),
-
 			},
 			) {
 				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
