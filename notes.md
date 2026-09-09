@@ -79,6 +79,39 @@ Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and 
 ### Important when working with cstring:
 It is better to import `strings` and do `strings.clone_from_ctring(the_cstring)` than trying to cast it, because it can look very weird.
 
+### Also -> Deleting the strings that get allocated by `clone_from_cstring()`
+For example, in this part note the `strings.clone_from_cstring(...)`
+
+```odin
+if rl.IsFileDropped() {
+	files = rl.LoadDroppedFiles()
+	fmt.println("======== FILES LOADED ========")
+	fmt.println(files)
+	i: u32 = 0
+	for i < files.count {
+		fmt.println(files.paths[i])
+		append(
+			&list_files_dropped,
+			strings.clone_from_cstring(files.paths[i]),
+		)
+		i += 1
+	}
+	fmt.println("======== FILES ADDED to list_files_dropped ========")
+	rl.UnloadDroppedFiles(files)
+	fmt.println("======== FILES UNLOADED ========")
+}
+```
+
+Even if you do the proper `	delete(list_files_dropped)` at the end, you will still have not deallocated the strings correctly.
+
+You'll still have to do this: 
+```odin
+for str in list_files_dropped {
+	delete(str)
+}
+```
+To really dealocate them.
+
 ---
 ### On Using `strings.join()` and the context.temp_allocator
 
@@ -101,6 +134,40 @@ I have seen that one can get growing allocations because of the main loop when d
 But the **problem** was that I was declaring and asigning to `text_to_put` right in there and if I was suign this `allocator=context.temp_allocator` then it would be wiped out per frame, so it would not show.
 
 The **solution** has been just declaring `text_to_put` as a global, taking it out of the stack. This way you asign to it per frame.
+
+---
+### How to accept Dropped Files only in a given area using `rl.IsFileDropped`
+
+The challenge was that `rl.IsFileDropped` works for the whole width of the window and there is no way to change that per se.
+BUT, the trick to do that is to use the Mouse Position and the Rectangle of the area wanted as the Drop Area, and by using `rl.CheckCollisionPointRec` to see if the point (the mouse position) is inside the rectangle (drop area) then you can get it going.
+
+**Note here**: Check if we are inside the area -> if true, check if file has been dropped -> if true, load the files and do whatever you want
+```odin
+if rl.CheckCollisionPointRec(
+	pointer_data.position,
+	dropDir1ElementDataRec,
+) {
+	print("INSIDE dropDir1ElementDataRec")
+
+	if rl.IsFileDropped() {
+		files = rl.LoadDroppedFiles()
+		print("======== FILES LOADED ========")
+		print(files)
+		i: u32 = 0
+		for i < files.count {
+			print(files.paths[i])
+			append(
+				&list_files_dropped,
+				strings.clone_from_cstring(files.paths[i]),
+			)
+			i += 1
+		}
+		print("======== FILES ADDED to list_files_dropped ========")
+		rl.UnloadDroppedFiles(files)
+		print("======== FILES UNLOADED ========")
+	}
+}
+```
 
  
 ---

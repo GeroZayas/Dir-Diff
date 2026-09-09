@@ -27,10 +27,6 @@ import "core:time"
 import rl "vendor:raylib"
 
 
-print :: fmt.println
-printf :: fmt.printfln
-
-
 // FONTS
 // =========
 
@@ -69,14 +65,18 @@ COLOR_TEAL :: clay.Color{111, 173, 162, 255}
 COLOR_BLUE_DARK :: clay.Color{2, 32, 82, 255}
 COLOR_BLACK :: clay.Color{0, 0, 0, 255}
 
+// Useful & Convenient
+print :: fmt.println
+printf :: fmt.printfln
+
 
 // Pictures
 geroImage: rl.Texture2D = {}
 dir_one: rl.Texture2D = {}
 
-// ***
 list_files_dropped: [dynamic]string
 text_to_put: string
+files: rl.FilePathList
 
 
 // STRUCTS
@@ -465,7 +465,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						transition = fade_out_transition(),
 					},
 					) {
-						// ***
+						// *** DROP DIR 1
 						if clay.UI(clay.ID("ImageDir"))(
 						{
 							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
@@ -473,25 +473,46 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						) {}
 
-						files: rl.FilePathList
-						if rl.IsFileDropped() {
-							files = rl.LoadDroppedFiles() 
-							fmt.println("======== FILES LOADED ========")
-							fmt.println(files)
-							files_paths := files.paths
-							i: u32 = 0
-							for i < files.count {
-								fmt.println(files_paths[i])
-								append(
-									&list_files_dropped,
-									strings.clone_from_cstring(files_paths[i]), 
-								) // ***
-								i += 1
-							}
-							fmt.println("======== FILES ADDED to list_files_dropped ========")
-							rl.UnloadDroppedFiles(files)
-							fmt.println("======== FILES UNLOADED ========")
+						// *** GET POINTER DATA LOGIC
+
+						pointer_data := clay.GetPointerState()
+						// fmt.printprintlnpointer_data)
+						dropDir1ElementData := clay.GetElementData(clay.ID("DropDir1"))
+
+						print("dropDir1ElementData:")
+						print(dropDir1ElementData)
+						dropDir1ElementDataRec := rl.Rectangle {
+							dropDir1ElementData.boundingBox.x,
+							dropDir1ElementData.boundingBox.y,
+							dropDir1ElementData.boundingBox.width,
+							dropDir1ElementData.boundingBox.height,
 						}
+
+						if rl.CheckCollisionPointRec(
+							pointer_data.position,
+							dropDir1ElementDataRec,
+						) {
+							print("INSIDE dropDir1ElementDataRec")
+
+							if rl.IsFileDropped() {
+								files = rl.LoadDroppedFiles()
+								print("======== FILES LOADED ========")
+								print(files)
+								i: u32 = 0
+								for i < files.count {
+									print(files.paths[i])
+									append(
+										&list_files_dropped,
+										strings.clone_from_cstring(files.paths[i]),
+									)
+									i += 1
+								}
+								print("======== FILES ADDED to list_files_dropped ========")
+								rl.UnloadDroppedFiles(files)
+								print("======== FILES UNLOADED ========")
+							}
+						}
+
 
 					}
 				}
@@ -533,6 +554,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							image = {imageData = &dir_one},
 						},
 						) {}
+
+						// *** Get element ID
 					}
 				}
 			}
@@ -589,16 +612,17 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				backgroundColor = COLOR_LIGHT,
 			},
 			) {
-				// ***
-				if len(list_files_dropped) == 0 { 
+				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
+				if len(list_files_dropped) == 0 {
 					text_to_put = lorem_ipsum()
 				} else {
-					text_to_put = strings.join(list_files_dropped[:], "\n", allocator=context.temp_allocator)
+					text_to_put = strings.join(
+						list_files_dropped[:],
+						"\n",
+						allocator = context.temp_allocator,
+					)
 				}
-				clay.Text(
-					text_to_put,
-					{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
-				)
+				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
 
 		}
@@ -965,11 +989,17 @@ main :: proc() {
 
 	// --------------------------- End of Program ---------------------------
 
+	print("=========================================")
+	for str in list_files_dropped {
+		delete(str)
+	}
+	print("=========================================")
+
+
 	free_all(arena_alloc)
 	free(clay_arena.memory)
 	delete(raylib_fonts)
 	delete(list_files_dropped)
-	// delete(text_to_put)
 
 	log.destroy_console_logger(context.logger)
 
@@ -980,7 +1010,7 @@ main :: proc() {
 			fmt.eprintf("%v\n", entry.location)
 		}
 	} else {
-		fmt.println("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
+		print("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
 	}
 	mem.tracking_allocator_destroy(&track)
 
