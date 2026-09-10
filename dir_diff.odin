@@ -274,24 +274,6 @@ fade_out_transition :: proc() -> clay.TransitionElementConfig {
 	return transition
 }
 
-foo :: proc "c" (
-	initial_state: clay.TransitionData,
-	properties: clay.TransitionPropertyFlags,
-) -> clay.TransitionData {
-	target: clay.TransitionData
-	if .BackgroundColor in properties {
-		target = {
-			boundingBox     = {100, 100, 100, 100},
-			backgroundColor = COLOR_RED,
-			overlayColor    = COLOR_BLUE,
-			borderColor     = COLOR_ORANGE,
-			borderWidth     = {3, 3, 3, 3, 3},
-		}
-	}
-
-	return target
-}
-
 rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
 	transition: clay.TransitionElementConfig
 	transition = {
@@ -307,37 +289,7 @@ rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
 
 lorem_ipsum :: proc() -> (lorem: string) {
 	lorem = `
-	Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
-	In id cursus mi pretium tellus duis convallis. 
-	Tempus leo eu aenean sed diam urna tempor. 
-	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
-	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
-	Ut hendrerit semper vel class aptent taciti sociosqu. 
-	Ad litora torquent per conubia nostra inceptos himenaeos.
-
-		Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
-	In id cursus mi pretium tellus duis convallis. 
-	Tempus leo eu aenean sed diam urna tempor. 
-	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
-	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
-	Ut hendrerit semper vel class aptent taciti sociosqu. 
-	Ad litora torquent per conubia nostra inceptos himenaeos.
-
-		Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
-	In id cursus mi pretium tellus duis convallis. 
-	Tempus leo eu aenean sed diam urna tempor. 
-	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
-	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
-	Ut hendrerit semper vel class aptent taciti sociosqu. 
-	Ad litora torquent per conubia nostra inceptos himenaeos.
-
-			Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. 
-	In id cursus mi pretium tellus duis convallis. 
-	Tempus leo eu aenean sed diam urna tempor. 
-	Pulvinar vivamus fringilla lacus nec metus bibendum egestas. 
-	Iaculis massa nisl malesuada lacinia integer nunc posuere. 
-	Ut hendrerit semper vel class aptent taciti sociosqu. 
-	Ad litora torquent per conubia nostra inceptos himenaeos.
+	Drop a DIR and see the contents here...
 	`
 	return
 }
@@ -480,7 +432,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						transition = fade_out_transition(),
 					},
 					) {
-						// *** DROP DIR 1
 						if clay.UI(clay.ID("ImageDir"))(
 						{
 							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
