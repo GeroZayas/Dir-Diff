@@ -294,7 +294,57 @@ lorem_ipsum :: proc() -> (lorem: string) {
 	return
 }
 
+// BBB
+/*
+Checks a) if something has been dropped to area b) if it only ONE thing  
+c) if it is indeed a DIR. IF all former TRUE:  Loads DIR files and puts 
+their paths (string) in given dynamic array to store.
+*/
+load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynamic]string) {
+	if rl.IsFileDropped() {
+		files = rl.LoadDroppedFiles()
+		if files.count > 1 {
+			rl.UnloadDroppedFiles(files)
+			file_drop_error = true
+			print("ERROR - More than one file")
+		} else {
+			file_drop_error = false
+		}
 
+		if !file_drop_error {
+			is_dir = !rl.IsPathFile(files.paths[0]) //***
+			print("Is DIR?", is_dir)
+			dir_1_path = files.paths[0]
+		}
+
+		if is_dir {
+			print("======== DIR LOADED ========")
+			print("files:", files)
+			files_path_list = rl.LoadDirectoryFiles(dir_1_path)
+			print("files_path_list:", files_path_list)
+			i: u32 = 0
+			for i < files_path_list.count {
+				print(files_path_list.paths[i])
+				append(
+					&list_content_paths_dyn_array^,
+					strings.clone_from_cstring(files_path_list.paths[i]),
+				)
+				i += 1
+			}
+			print("======== DIR ADDED to list_files_dropped_dir1 ========")
+			rl.UnloadDroppedFiles(files)
+			rl.UnloadDroppedFiles(files_path_list)
+			print("======== FILES UNLOADED ========")
+		} else {
+			rl.UnloadDroppedFiles(files)
+		}
+
+
+	}
+}
+
+
+// ============================== CREATE LAYOUT PROC ====================================
 createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
 	clay.BeginLayout()
 	if clay.UI(clay.ID("OuterContainer"))(
@@ -458,46 +508,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir1ElementDataRec,
 						) {
-							if rl.IsFileDropped() {
-								files = rl.LoadDroppedFiles()
-								if files.count > 1 {
-									rl.UnloadDroppedFiles(files)
-									file_drop_error = true
-									print("ERROR - More than one file")
-								} else {
-									file_drop_error = false
-								}
 
-								if !file_drop_error {
-									is_dir = !rl.IsPathFile(files.paths[0]) //***
-									print("Is DIR?", is_dir)
-									dir_1_path = files.paths[0]
-								}
-
-								if is_dir {
-									print("======== DIR LOADED ========")
-									print("files:", files)
-									files_path_list = rl.LoadDirectoryFiles(dir_1_path)
-									print("files_path_list:", files_path_list)
-									i: u32 = 0
-									for i < files_path_list.count {
-										print(files_path_list.paths[i])
-										append(
-											&list_files_dropped_dir1,
-											strings.clone_from_cstring(files_path_list.paths[i]),
-										)
-										i += 1
-									}
-									print("======== DIR ADDED to list_files_dropped_dir1 ========")
-									rl.UnloadDroppedFiles(files)
-									rl.UnloadDroppedFiles(files_path_list)
-									print("======== FILES UNLOADED ========")
-								} else {
-									rl.UnloadDroppedFiles(files)
-								}
-
-
-							}
+							load_dropped_dir_and_its_contents(&list_files_dropped_dir1)
 						}
 					}
 				}
@@ -564,45 +576,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir2ElementDataRec,
 						) {
-							if rl.IsFileDropped() {
-								files = rl.LoadDroppedFiles()
-								if files.count > 1 {
-									rl.UnloadDroppedFiles(files)
-									file_drop_error = true
-									print("ERROR - More than one file")
-								} else {
-									file_drop_error = false
-								}
-
-								if !file_drop_error {
-									is_dir = !rl.IsPathFile(files.paths[0]) //***
-									print("Is DIR?", is_dir)
-									dir_2_path = files.paths[0]
-								}
-
-								if is_dir {
-									print("======== DIR LOADED ========")
-									print("files:", files)
-									files_path_list = rl.LoadDirectoryFiles(dir_2_path)
-									print("files_path_list:", files_path_list)
-									i: u32 = 0
-									for i < files_path_list.count {
-										print(files_path_list.paths[i])
-										append(
-											&list_files_dropped_dir2,
-											strings.clone_from_cstring(files_path_list.paths[i]),
-										)
-										i += 1
-									}
-									print("======== DIR ADDED to list_files_dropped_dir1 ========")
-									rl.UnloadDroppedFiles(files)
-									rl.UnloadDroppedFiles(files_path_list)
-									print("======== FILES UNLOADED ========")
-								} else {
-									rl.UnloadDroppedFiles(files)
-								}
-
-							}
+							// BBB
+							load_dropped_dir_and_its_contents(&list_files_dropped_dir2)
 						}
 
 					}
@@ -1051,10 +1026,11 @@ main :: proc() {
 
 	// --------------------------- End of Program ---------------------------
 
-	print("=========================================")
+	// Clean Ups: -----------------------
 	for str in list_files_dropped_dir1 {
 		delete(str)
 	}
+
 	for str in list_files_dropped_dir2 {
 		delete(str)
 	}
@@ -1069,6 +1045,9 @@ main :: proc() {
 
 	log.destroy_console_logger(context.logger)
 
+	// End of Clean Ups: ----------------
+
+
 	if len(track.allocation_map) > 0 {
 		fmt.eprintf("=== %v allocations not freed: ===\n", len(track.allocation_map))
 		for _, entry in track.allocation_map {
@@ -1076,7 +1055,7 @@ main :: proc() {
 			fmt.eprintf("%v\n", entry.location)
 		}
 	} else {
-		print("\n\n=== ALL GOOD WITH ALLOCATIONS! CONGRATS ===\n\n")
+		print("\n\n=== ✅ ALL GOOD WITH ALLOCATIONS! CONGRATS 😌 ===\n\n")
 	}
 	mem.tracking_allocator_destroy(&track)
 
