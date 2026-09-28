@@ -136,7 +136,7 @@ I have seen that one can get growing allocations because of the main loop when d
 }
 ```
 
-But the **problem** was that I was declaring and asigning to `text_to_put` right in there and if I was suign this `allocator=context.temp_allocator` then it would be wiped out per frame, so it would not show.
+But the **problem** was that I was declaring and assigning to `text_to_put` right in there and if I was suign this `allocator=context.temp_allocator` then it would be wiped out per frame, so it would not show.
 
 The **solution** has been just declaring `text_to_put` as a global, taking it out of the stack. This way you asign to it per frame.
 
@@ -180,23 +180,23 @@ if rl.CheckCollisionPointRec(
 
 ### How create a button with two textures (normal & clicked) and render it?
 
-You need have / create the two textures. Then, you load them with raylib:
+You need have / create the two textures. Then, you load them with **raylib**:
 
-We declare this as globals (in this case):
+We declare these as globals (in this case):
 
 ```odin
 btn1: rl.Texture2D = {}
 btn1_clicked: rl.Texture2D = {}
 ```
 
-We then do the proper loading inside our `main` proc after initializing the window with raylib:
+We then do the proper loading inside our `main` proc after initializing the window with **raylib**:
 
 ```odin
 btn1 = rl.LoadTexture("assets/images/btn1.png")
 btn1_clicked = rl.LoadTexture("assets/images/btn1_clicked.png")
 ```
 
-We can then create in Clay a string for the button id to be referred to later, which is pretty cool:
+We can then in Clay create a string for the button id to be referred to later, as we can hold it in a var, which is pretty cool:
 
 ```odin
 btn_id := clay.GetElementId(clay.MakeString("btn1"))
