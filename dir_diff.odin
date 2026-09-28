@@ -3,11 +3,15 @@
 * Go to https://htmlcolorcodes.com/es/
 To try and conform RGA colors
 
-
-
-
 *////////////////////////////////////////////////////////////////
 
+
+
+/*
+WORKING ON NOW (gero)(28th sept 2026):
+.- reducing the size of the boxes to drop the dirs
+.- adding reactangle/ div to show info about the uploaded dirs
+*/
 
 package dir_diff
 
@@ -354,19 +358,6 @@ load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynami
 
 	}
 }
-
-
-// ***
-draw_btn :: proc(id: string, btn_image: ^rl.Texture, sizing: f32 = 50) {
-	if clay.UI(clay.ID(id))(
-	{
-		layout = {sizing = {width = clay.SizingFixed(sizing)}},
-		aspectRatio = {1.0},
-		image = {imageData = btn_image},
-	},
-	) {}
-}
-
 
 // ============================== CREATE LAYOUT PROC ====================================
 createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.RenderCommand) {
