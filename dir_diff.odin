@@ -6,7 +6,6 @@ To try and conform RGA colors
 *////////////////////////////////////////////////////////////////
 
 
-
 /*
 WORKING ON NOW (gero)(28th sept 2026):
 .- reducing the size of the boxes to drop the dirs
@@ -433,10 +432,11 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 8)
 		draw_space(id = "Space2", color = COLOR_LIGHT)
 
+		// ***
 		if clay.UI(clay.ID("OuterDropDirContainer"))(
 		{
 			layout = {
-				sizing = {clay.SizingGrow(), clay.SizingGrow()},
+				sizing = {clay.SizingGrow(), clay.SizingFixed(f32(rl.GetScreenHeight()) * 0.2)},
 				// padding = clay.PaddingAll(10),
 				childAlignment = {x = .Center, y = .Center},
 				layoutDirection = .LeftToRight,
@@ -447,14 +447,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			if clay.UI(clay.ID("DropDirContainer"))(
 			{
 				layout = {
-					sizing = {clay.SizingFixed(650), clay.SizingFixed(280)},
+					sizing = {clay.SizingFixed(350), clay.SizingFixed(150)},
 					padding = clay.PaddingAll(5),
 					childAlignment = {x = .Center, y = .Center},
 					layoutDirection = .LeftToRight,
 					childGap = 10,
 				},
 				backgroundColor = cast(clay.Color)rl.WHITE,
-				cornerRadius = clay.CornerRadiusAll(5),
+				cornerRadius = clay.CornerRadiusAll(10),
+				border = {COLOR_LIGHT, {betweenChildren = 5}},
 			},
 			) {
 
@@ -472,15 +473,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						"Drag & Drop Dir 1",
 						clay.TextElementConfig {
 							fontId = 8,
-							fontSize = 18,
+							fontSize = 14,
 							textColor = COLOR_RL_RED,
-							letterSpacing = 2,
+							letterSpacing = 1,
 						},
 					)
 					if clay.UI(clay.ID("DropDir1"))(
 					{
 						layout = {
-							sizing = {clay.SizingFixed(200), clay.SizingFixed(200)},
+							sizing = {clay.SizingFixed(100), clay.SizingFixed(100)},
 							childAlignment = {x = .Center, y = .Center},
 							// padding = clay.PaddingAll(2),
 							layoutDirection = .TopToBottom,
@@ -493,7 +494,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					) {
 						if clay.UI(clay.ID("ImageDir"))(
 						{
-							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
+							layout = {sizing = {clay.SizingFixed(40), clay.SizingFixed(40)}},
 							image = {imageData = &dir_one},
 						},
 						) {}
@@ -539,15 +540,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						"Drag & Drop Dir 2",
 						clay.TextElementConfig {
 							fontId = 8,
-							fontSize = 18,
+							fontSize = 14,
 							textColor = COLOR_RL_BLUE,
-							letterSpacing = 2,
+							letterSpacing = 1,
 						},
 					)
 					if clay.UI(clay.ID("DropDir2"))(
 					{
 						layout = {
-							sizing = {clay.SizingFixed(200), clay.SizingFixed(200)},
+							sizing = {clay.SizingFixed(100), clay.SizingFixed(100)},
 							childAlignment = {x = .Center, y = .Center},
 							// padding = clay.PaddingAll(2),
 							layoutDirection = .TopToBottom,
@@ -559,7 +560,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					) {
 						if clay.UI(clay.ID("ImageDir"))(
 						{
-							layout = {sizing = {clay.SizingFixed(50), clay.SizingFixed(50)}},
+							layout = {sizing = {clay.SizingFixed(40), clay.SizingFixed(40)}},
 							image = {imageData = &dir_one},
 						},
 						) {}
