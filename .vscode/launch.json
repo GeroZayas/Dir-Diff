@@ -1,0 +1,14 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug dir_diff",
+            "type": "lldb",
+            "request": "launch",
+            "program": "${workspaceFolder}/dir_diff",
+            "args": [],
+            "cwd": "${workspaceFolder}",
+            "stopOnEntry": false
+        }
+    ]
+}

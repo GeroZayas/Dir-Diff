@@ -79,13 +79,16 @@ printf :: fmt.printfln
 // Pictures
 geroImage: rl.Texture2D = {}
 dir_one: rl.Texture2D = {}
+btn1: rl.Texture2D = {}
+btn1_clicked: rl.Texture2D = {}
 
+// Others
 list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
 text_to_put: string
 files_path_list: rl.FilePathList
 files: rl.FilePathList
-file_drop_error: bool //***
+file_drop_error: bool
 is_dir: bool
 dir_1_path: cstring
 dir_2_path: cstring
@@ -99,6 +102,15 @@ DirectoryInfo :: struct {
 	total_files: int,
 	files_array: [dynamic]os.File_Info,
 }
+
+// ENUMS
+// =========
+Screens :: enum {
+	IntroScreen,
+	MainProgramScreen,
+}
+
+currentScreen: Screens //AAA
 
 
 // PROCEDURES
@@ -312,7 +324,7 @@ load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynami
 		}
 
 		if !file_drop_error {
-			is_dir = !rl.IsPathFile(files.paths[0]) //***
+			is_dir = !rl.IsPathFile(files.paths[0])
 			print("Is DIR?", is_dir)
 			dir_1_path = files.paths[0]
 		}
@@ -341,6 +353,18 @@ load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynami
 
 
 	}
+}
+
+
+// ***
+draw_btn :: proc(id: string, btn_image: ^rl.Texture, sizing: f32 = 50) {
+	if clay.UI(clay.ID(id))(
+	{
+		layout = {sizing = {width = clay.SizingFixed(sizing)}},
+		aspectRatio = {1.0},
+		image = {imageData = btn_image},
+	},
+	) {}
 }
 
 
@@ -414,15 +438,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				},
 			)
 		}
-		// draw_stripe("stripe3", cast(clay.Color)rl.ORANGE, h = 6)
-		// draw_stripe("stripe2", cast(clay.Color)rl.GOLD, h = 8)
-		// draw_stripe("stripe1", cast(clay.Color)rl.WHITE, h = 10)
 
 		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 8)
-
-
 		draw_space(id = "Space2", color = COLOR_LIGHT)
-
 
 		if clay.UI(clay.ID("OuterDropDirContainer"))(
 		{
@@ -488,8 +506,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							image = {imageData = &dir_one},
 						},
 						) {}
-
-						// *** GET POINTER DATA LOGIC
 
 						pointer_data := clay.GetPointerState()
 						// fmt.printprintlnpointer_data)
@@ -557,8 +573,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						) {}
 
-						// *** GET POINTER DATA LOGIC
-
 						pointer_data := clay.GetPointerState()
 						// fmt.printprintlnpointer_data)
 						dropDir2ElementData := clay.GetElementData(clay.ID("DropDir2"))
@@ -619,8 +633,32 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
+				btn_id := clay.GetElementId(clay.MakeString("btn1"))
+				is_hovered := clay.PointerOver(btn_id)
+				is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
 
-				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
+				current_texture := &btn1
+				if is_clicked {
+					current_texture = &btn1_clicked
+				}
+
+				if is_hovered && rl.IsMouseButtonReleased(.LEFT) {
+					print("BTN PRESSED WITH SUCCESS!")
+				}
+
+				if clay.UI(clay.ID("btn1"))(
+				{
+					layout = {
+						sizing = {
+							width = clay.SizingFixed(f32(btn1.width/3)),
+							height = clay.SizingFixed(f32(btn1.height/3)),
+						},
+					},
+					image = {imageData = current_texture},
+				},
+				) {}
+
+				// PUT LOREM IPSUM OR LEADED FILE PATHS
 				if len(list_files_dropped_dir1) == 0 {
 					text_to_put = lorem_ipsum()
 				} else {
@@ -649,7 +687,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
-				// ***  PUT LOREM IPSUM OR LEADED FILE PATHS
 				if len(list_files_dropped_dir2) == 0 {
 					text_to_put = lorem_ipsum()
 				} else {
@@ -951,9 +988,7 @@ main :: proc() {
 	context.allocator = mem.tracking_allocator(&track)
 	context.logger = log.create_console_logger()
 
-	// CLAY
-
-
+	// === CLAY ===
 	min_memory_size := clay.MinMemorySize()
 	memory := make([^]u8, min_memory_size)
 	clay_arena: clay.Arena = clay.CreateArenaWithCapacityAndMemory(uint(min_memory_size), memory)
@@ -972,6 +1007,8 @@ main :: proc() {
 	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
 
 	geroImage = rl.LoadTexture("assets/images/webcam-toy-foto1.png")
+	btn1 = rl.LoadTexture("assets/images/btn1.png")
+	btn1_clicked = rl.LoadTexture("assets/images/btn1_clicked.png")
 	dir_one = rl.LoadTexture("assets/images/dir1.png")
 	font_one_path: cstring = "assets/fonts/MPLUSCodeLatin-VariableFont_wdth,wght.ttf"
 	load_font(FONT_ID_TITLE_56, 56, font_one_path)
@@ -985,6 +1022,7 @@ main :: proc() {
 	load_font(FONT_ID_BODY_24, 24, font_one_path)
 	load_font(FONT_ID_BODY_16, 16, font_one_path)
 
+	currentScreen = Screens.MainProgramScreen
 
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
@@ -1017,10 +1055,19 @@ main :: proc() {
 			rl.GetFrameTime(),
 		)
 
+		if rl.IsKeyPressed(.C) {
+			currentScreen = Screens.IntroScreen
+		}
+
 		// --------------------------- DRAW ---------------------------
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
-		clay_raylib_render(&renderCommands)
+		switch currentScreen {
+		case .MainProgramScreen:
+			clay_raylib_render(&renderCommands)
+		case .IntroScreen:
+			rl.DrawRectangleV({200, 200}, {200, 200}, rl.RED)
+		}
 		rl.EndDrawing()
 	}
 
@@ -1034,8 +1081,6 @@ main :: proc() {
 	for str in list_files_dropped_dir2 {
 		delete(str)
 	}
-	print("=========================================")
-
 
 	free_all(arena_alloc)
 	free(clay_arena.memory)
