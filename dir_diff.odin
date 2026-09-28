@@ -633,27 +633,27 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
-                // ***
-				btn_id := clay.GetElementId(clay.MakeString("btn1"))
-				is_hovered := clay.PointerOver(btn_id)
-				is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
+				// // hidden button
+				// btn_id := clay.GetElementId(clay.MakeString("btn1"))
+				// is_hovered := clay.PointerOver(btn_id)
+				// is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
 
-				current_texture := &btn1
-				if is_clicked {
-					current_texture = &btn1_clicked
-				}
+				// current_texture := &btn1
+				// if is_clicked {
+				// 	current_texture = &btn1_clicked
+				// }
 
-				if clay.UI(clay.ID("btn1"))(
-				{
-					layout = {
-						sizing = {
-							width = clay.SizingFixed(f32(btn1.width/3)),
-							height = clay.SizingFixed(f32(btn1.height/3)),
-						},
-					},
-					image = {imageData = current_texture},
-				},
-				) {}
+				// if clay.UI(clay.ID("btn1"))(
+				// {
+				// 	layout = {
+				// 		sizing = {
+				// 			width = clay.SizingFixed(f32(btn1.width / 3)),
+				// 			height = clay.SizingFixed(f32(btn1.height / 3)),
+				// 		},
+				// 	},
+				// 	image = {imageData = current_texture},
+				// },
+				// ) {}
 
 				// PUT LOREM IPSUM OR LEADED FILE PATHS
 				if len(list_files_dropped_dir1) == 0 {
