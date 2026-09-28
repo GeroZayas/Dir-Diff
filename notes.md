@@ -17,7 +17,7 @@ main :: proc(){
 	// -------------------
 	// PROGRAM HERE ...
 	// -------------------
-	
+
 	log.destroy_console_logger(context.logger)
 
 	if len(track.allocation_map) > 0 {
@@ -46,7 +46,6 @@ main :: proc(){
 	defer delete(duplicates) // <---
 ```
 
-
 ### Third: put all data in an Arena or similar:
 
 ```odin
@@ -57,7 +56,6 @@ get_array_file_names :: proc(dir_path: string, print_file_names: bool = false, a
 
 Note the `arena_alloc: mem.Allocator` arg and then its use in `os.read_all_directory_by_path(dir_path, arena_alloc)`.
 Then you just have to free the whole arena: `free_all(arena_alloc)` and that's it!
-
 
 ### Fourth: Careful with input gotten in a proc -> make sure you clone it from the buffer:
 
@@ -76,10 +74,13 @@ get_user_input :: proc(arena_alloc: mem.Allocator) -> string {
 Note this part `strings.clone_from_bytes(buffer[:user_input], arena_alloc)` and also note how we allocate to the arena we create it. We're putting everything in the same arena in this case.
 
 ---
+
 ### Important when working with cstring:
+
 It is better to import `strings` and do `strings.clone_from_ctring(the_cstring)` than trying to cast it, because it can look very weird.
 
 ### Also -> Deleting the strings that get allocated by `clone_from_cstring()`
+
 For example, in this part note the `strings.clone_from_cstring(...)`
 
 ```odin
@@ -104,22 +105,25 @@ if rl.IsFileDropped() {
 
 Even if you do the proper `	delete(list_files_dropped)` at the end, you will still have not deallocated the strings correctly.
 
-You'll still have to do this: 
+You'll still have to do this:
+
 ```odin
 for str in list_files_dropped {
 	delete(str)
 }
 ```
+
 To really dealocate them.
 
 ---
+
 ### On Using `strings.join()` and the context.temp_allocator
 
 I have seen that one can get growing allocations because of the main loop when doing the `strings.join()` like in here:
 
-```odin 
+```odin
 {
-	if len(list_files_dropped) == 0 { 
+	if len(list_files_dropped) == 0 {
 		text_to_put = lorem_ipsum()
 	} else {
 		text_to_put = strings.join(list_files_dropped[:], "\n", allocator=context.temp_allocator)
@@ -131,17 +135,20 @@ I have seen that one can get growing allocations because of the main loop when d
 	)
 }
 ```
+
 But the **problem** was that I was declaring and asigning to `text_to_put` right in there and if I was suign this `allocator=context.temp_allocator` then it would be wiped out per frame, so it would not show.
 
 The **solution** has been just declaring `text_to_put` as a global, taking it out of the stack. This way you asign to it per frame.
 
 ---
+
 ### How to accept Dropped Files only in a given area using `rl.IsFileDropped`
 
 The challenge was that `rl.IsFileDropped` works for the whole width of the window and there is no way to change that per se.
 BUT, the trick to do that is to use the Mouse Position and the Rectangle of the area wanted as the Drop Area, and by using `rl.CheckCollisionPointRec` to see if the point (the mouse position) is inside the rectangle (drop area) then you can get it going.
 
 **Note here**: Check if we are inside the area -> if true, check if file has been dropped -> if true, load the files and do whatever you want
+
 ```odin
 if rl.CheckCollisionPointRec(
 	pointer_data.position,
@@ -169,15 +176,70 @@ if rl.CheckCollisionPointRec(
 }
 ```
 
- 
 ---
+
+### How create a button with two textures (normal & clicked) and render it?
+
+You need have / create the two textures. Then, you load them with raylib:
+
+We declare this as globals (in this case):
+
+```odin
+btn1: rl.Texture2D = {}
+btn1_clicked: rl.Texture2D = {}
+```
+
+We then do the proper loading inside our `main` proc after initializing the window with raylib:
+
+```odin
+btn1 = rl.LoadTexture("assets/images/btn1.png")
+btn1_clicked = rl.LoadTexture("assets/images/btn1_clicked.png")
+```
+
+We can then create in Clay a string for the button id to be referred to later, which is pretty cool:
+
+```odin
+btn_id := clay.GetElementId(clay.MakeString("btn1"))
+```
+
+And also, we can then create two boolean states of the button being **hovered** and the button being **clicked**:
+
+```odin
+is_hovered := clay.PointerOver(btn_id)
+is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
+```
+
+We then create a texture variable to hold the normal texture and then, when appropriate, the clicked texture:
+
+```odin
+current_texture := &btn1
+if is_clicked {
+    current_texture = &btn1_clicked
+}
+```
+
+And then we can create the proper layout visual element with `clay.UI()`. Note the `image = {imageData = current_texture}`
+
+```odin
+if clay.UI(clay.ID("btn1"))(
+    {
+        layout = {
+            sizing = {
+                width = clay.SizingFixed(f32(btn1.width/3)),
+                height = clay.SizingFixed(f32(btn1.height/3)),
+            },
+        },
+        image = {imageData = current_texture},
+    },
+    ) {}
+```
+
 # Exploring Gero
 
 ### How to drag and drop?
 
 How to open a window for dir selectors?
 
+```
 
-
-
-
+```

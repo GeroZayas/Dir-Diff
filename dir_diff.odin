@@ -633,6 +633,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
+                // ***
 				btn_id := clay.GetElementId(clay.MakeString("btn1"))
 				is_hovered := clay.PointerOver(btn_id)
 				is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
@@ -640,10 +641,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				current_texture := &btn1
 				if is_clicked {
 					current_texture = &btn1_clicked
-				}
-
-				if is_hovered && rl.IsMouseButtonReleased(.LEFT) {
-					print("BTN PRESSED WITH SUCCESS!")
 				}
 
 				if clay.UI(clay.ID("btn1"))(
