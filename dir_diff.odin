@@ -311,8 +311,8 @@ lorem_ipsum :: proc() -> (lorem: string) {
 
 // BBB
 /*
-Checks a) if something has been dropped to area b) if it only ONE thing  
-c) if it is indeed a DIR. IF all former TRUE:  Loads DIR files and puts 
+Checks a) if something has been dropped to area b) if it only ONE thing
+c) if it is indeed a DIR. IF all former TRUE:  Loads DIR files and puts
 their paths (string) in given dynamic array to store.
 */
 load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynamic]string) {
@@ -987,12 +987,21 @@ main :: proc() {
 		{handler = error_handler},
 	)
 	clay.SetMeasureTextFunction(measure_text, nil)
-	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI})
+	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI, .WINDOW_MAXIMIZED, .WINDOW_HIDDEN})
 
 
 	// --------------------------- Start of Program ---------------------------
 
 	rl.InitWindow(screenWidth, screenHeight, "DirDiff")
+
+    monitor := rl.GetCurrentMonitor()
+    screenWidth = rl.GetMonitorWidth(monitor)
+    screenHeight = rl.GetMonitorHeight(monitor)
+
+    rl.SetWindowSize(screenWidth, screenHeight)
+    rl.SetWindowPosition(0,0)
+    rl.ClearWindowState({.WINDOW_HIDDEN})
+
 	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
 
 	geroImage = rl.LoadTexture("assets/images/webcam-toy-foto1.png")

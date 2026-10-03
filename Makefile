@@ -1,5 +1,9 @@
+# run:
+# 	clear && odin run .
+
 run:
-	clear && odin run .
+	clear && ./dir_diff
+
 
 run-debug:
 	clear && make debug && ./debug_build-main_odin
