@@ -7,8 +7,8 @@ To try and conform RGA colors
 
 
 /*
-WORKING ON NOW (gero)(8 oct 2026):
-.- adding reactangle/ div to show info about the uploaded dirs
+WORKING ON NOW (gero)(9 oct 2026):
+.- getting the info from uploaded dirs
 */
 
 package dir_diff
@@ -611,10 +611,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			if clay.UI(clay.ID("GeneralAreaContainerDirInfoOne"))(
 			{
 				layout = {
-					sizing = {
-						clay.SizingGrow(),
-						clay.SizingGrow(),
-					},
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
 					childAlignment = {x = .Left, y = .Top},
 					layoutDirection = .TopToBottom,
 					padding = {5, 5, 5, 5},
@@ -626,10 +623,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				if clay.UI(clay.ID("TopContainerDirInfoOne"))(
 				{
 					layout = {
-						sizing = {
-							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
-							clay.SizingGrow(),
-						},
+						sizing = {clay.SizingGrow(), clay.SizingFixed(90)},
 						childAlignment = {x = .Left, y = .Top},
 						layoutDirection = .TopToBottom,
 						padding = {5, 5, 5, 5},
@@ -658,7 +652,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 					layout = {
 						sizing = {
-							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2 - 10),
 							clay.SizingGrow(),
 						},
 						childAlignment = {x = .Left, y = .Top},
@@ -709,35 +703,78 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 			}
 
-
-			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
+			if clay.UI(clay.ID("GeneralAreaContainerDirInfoTwo"))(
 			{
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				layout = {
-					sizing = {
-						clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
-						clay.SizingGrow(),
-					},
+					sizing = {clay.SizingGrow(), clay.SizingGrow()},
 					childAlignment = {x = .Left, y = .Top},
-					layoutDirection = .LeftToRight,
-					padding = {10, 0, 10, 0},
+					layoutDirection = .TopToBottom,
+					padding = {5, 5, 5, 5},
 				},
 				backgroundColor = COLOR_RL_BLUE_LOW_ALPHA,
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
-				if len(list_files_dropped_dir2) == 0 {
-					text_to_put = lorem_ipsum()
-				} else {
-					text_to_put = strings.join(
-						list_files_dropped_dir2[:],
-						"\n",
-						allocator = context.temp_allocator,
+
+				if clay.UI(clay.ID("TopContainerDirInfoTwo"))(
+				{
+					layout = {
+						sizing = {clay.SizingGrow(), clay.SizingFixed(90)},
+						childAlignment = {x = .Left, y = .Top},
+						layoutDirection = .TopToBottom,
+						padding = {5, 5, 5, 5},
+					},
+					backgroundColor = COLOR_RL_BLUE_LOW_ALPHA,
+					cornerRadius = clay.CornerRadiusAll(5),
+				},
+				) {
+					// ***
+					if clay.UI(clay.ID("test2"))(
+					{
+						layout = {
+							sizing = {clay.SizingGrow(), clay.SizingFixed(80)},
+							childAlignment = {x = .Left, y = .Top},
+							layoutDirection = .LeftToRight,
+							padding = {5, 5, 5, 5},
+						},
+						backgroundColor = COLOR_RL_BLUE,
+						cornerRadius = clay.CornerRadiusAll(5),
+					},
+					) {}
+				}
+
+				if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
+				{
+					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+					layout = {
+						sizing = {
+							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2 - 10),
+							clay.SizingGrow(),
+						},
+						childAlignment = {x = .Left, y = .Top},
+						layoutDirection = .TopToBottom,
+						padding = {10, 10, 10, 10},
+					},
+					backgroundColor = COLOR_RL_BLUE_LOW_ALPHA,
+					cornerRadius = clay.CornerRadiusAll(5),
+				},
+				) {
+					if len(list_files_dropped_dir2) == 0 {
+						text_to_put = lorem_ipsum()
+					} else {
+						text_to_put = strings.join(
+							list_files_dropped_dir2[:],
+							"\n",
+							allocator = context.temp_allocator,
+						)
+					}
+					clay.Text(
+						text_to_put,
+						{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
 					)
 				}
-				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
-			}
 
+			}
 		}
 
 
