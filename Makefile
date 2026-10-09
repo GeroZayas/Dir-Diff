@@ -4,6 +4,8 @@
 run:
 	clear && ./dir_diff
 
+brun:
+	odin build . && clear && ./dir_diff
 
 run-debug:
 	clear && make debug && ./debug_build-main_odin

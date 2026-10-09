@@ -7,8 +7,7 @@ To try and conform RGA colors
 
 
 /*
-WORKING ON NOW (gero)(28th sept 2026):
-.- reducing the size of the boxes to drop the dirs
+WORKING ON NOW (gero)(8 oct 2026):
 .- adding reactangle/ div to show info about the uploaded dirs
 */
 
@@ -432,14 +431,13 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		draw_space(id = "Space1", color = COLOR_BROWN, sizing = 8)
 		draw_space(id = "Space2", color = COLOR_LIGHT)
 
-		// ***
 		if clay.UI(clay.ID("OuterDropDirContainer"))(
 		{
 			layout = {
 				sizing = {clay.SizingGrow(), clay.SizingFixed(f32(rl.GetScreenHeight()) * 0.2)},
 				// padding = clay.PaddingAll(10),
 				childAlignment = {x = .Center, y = .Center},
-				layoutDirection = .LeftToRight,
+				layoutDirection = .TopToBottom,
 			},
 		},
 		) {
@@ -591,7 +589,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			}
 		}
 
-		draw_space(id = "Space2", color = COLOR_LIGHT)
+		draw_space(id = "Space3", color = COLOR_LIGHT)
 
 		draw_space(id = "AboveDirsPathsArea", color = COLOR_LIGHT_HOVER, sizing = 5)
 
@@ -609,56 +607,108 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		},
 		) {
 
-			if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
+			// ***
+			if clay.UI(clay.ID("GeneralAreaContainerDirInfoOne"))(
 			{
-				clip = {vertical = true, childOffset = clay.GetScrollOffset()},
 				layout = {
 					sizing = {
-						clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+						clay.SizingGrow(),
 						clay.SizingGrow(),
 					},
 					childAlignment = {x = .Left, y = .Top},
-					layoutDirection = .LeftToRight,
-					padding = {10, 0, 10, 0},
+					layoutDirection = .TopToBottom,
+					padding = {5, 5, 5, 5},
 				},
 				backgroundColor = COLOR_RL_RED_LOW_ALPHA,
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
-				// // hidden button
-				// btn_id := clay.GetElementId(clay.MakeString("btn1"))
-				// is_hovered := clay.PointerOver(btn_id)
-				// is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
+				if clay.UI(clay.ID("TopContainerDirInfoOne"))(
+				{
+					layout = {
+						sizing = {
+							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+							clay.SizingGrow(),
+						},
+						childAlignment = {x = .Left, y = .Top},
+						layoutDirection = .TopToBottom,
+						padding = {5, 5, 5, 5},
+					},
+					backgroundColor = COLOR_RL_RED_LOW_ALPHA,
+					cornerRadius = clay.CornerRadiusAll(5),
+				},
+				) {
+					// ***
+					if clay.UI(clay.ID("test"))(
+					{
+						layout = {
+							sizing = {clay.SizingGrow(), clay.SizingFixed(80)},
+							childAlignment = {x = .Left, y = .Top},
+							layoutDirection = .LeftToRight,
+							padding = {5, 5, 5, 5},
+						},
+						backgroundColor = COLOR_RL_BLUE,
+						cornerRadius = clay.CornerRadiusAll(5),
+					},
+					) {}
+				}
 
-				// current_texture := &btn1
-				// if is_clicked {
-				// 	current_texture = &btn1_clicked
-				// }
+				if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
+				{
+					clip = {vertical = true, childOffset = clay.GetScrollOffset()},
+					layout = {
+						sizing = {
+							clay.SizingFixed(cast(f32)(rl.GetScreenWidth()) / 2),
+							clay.SizingGrow(),
+						},
+						childAlignment = {x = .Left, y = .Top},
+						layoutDirection = .TopToBottom,
+						padding = {10, 10, 10, 10},
+					},
+					backgroundColor = COLOR_RL_RED_LOW_ALPHA,
+					cornerRadius = clay.CornerRadiusAll(5),
+				},
+				) {
+					// // hidden button
+					// btn_id := clay.GetElementId(clay.MakeString("btn1"))
+					// is_hovered := clay.PointerOver(btn_id)
+					// is_clicked := is_hovered && rl.IsMouseButtonDown(.LEFT)
 
-				// if clay.UI(clay.ID("btn1"))(
-				// {
-				// 	layout = {
-				// 		sizing = {
-				// 			width = clay.SizingFixed(f32(btn1.width / 3)),
-				// 			height = clay.SizingFixed(f32(btn1.height / 3)),
-				// 		},
-				// 	},
-				// 	image = {imageData = current_texture},
-				// },
-				// ) {}
+					// current_texture := &btn1
+					// if is_clicked {
+					// 	current_texture = &btn1_clicked
+					// }
 
-				// PUT LOREM IPSUM OR LEADED FILE PATHS
-				if len(list_files_dropped_dir1) == 0 {
-					text_to_put = lorem_ipsum()
-				} else {
-					text_to_put = strings.join(
-						list_files_dropped_dir1[:],
-						"\n",
-						allocator = context.temp_allocator,
+					// if clay.UI(clay.ID("btn1"))(
+					// {
+					// 	layout = {
+					// 		sizing = {
+					// 			width = clay.SizingFixed(f32(btn1.width / 3)),
+					// 			height = clay.SizingFixed(f32(btn1.height / 3)),
+					// 		},
+					// 	},
+					// 	image = {imageData = current_texture},
+					// },
+					// ) {}
+
+					// PUT LOREM IPSUM OR LEADED FILE PATHS
+
+					if len(list_files_dropped_dir1) == 0 {
+						text_to_put = lorem_ipsum()
+					} else {
+						text_to_put = strings.join(
+							list_files_dropped_dir1[:],
+							"\n",
+							allocator = context.temp_allocator,
+						)
+					}
+					clay.Text(
+						text_to_put,
+						{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
 					)
 				}
-				clay.Text(text_to_put, {textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words})
 			}
+
 
 			if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
 			{
@@ -987,20 +1037,29 @@ main :: proc() {
 		{handler = error_handler},
 	)
 	clay.SetMeasureTextFunction(measure_text, nil)
-	rl.SetConfigFlags({.VSYNC_HINT, .WINDOW_RESIZABLE, .MSAA_4X_HINT, .WINDOW_HIGHDPI, .WINDOW_MAXIMIZED, .WINDOW_HIDDEN})
+	rl.SetConfigFlags(
+		{
+			.VSYNC_HINT,
+			.WINDOW_RESIZABLE,
+			.MSAA_4X_HINT,
+			.WINDOW_HIGHDPI,
+			.WINDOW_MAXIMIZED,
+			.WINDOW_HIDDEN,
+		},
+	)
 
 
 	// --------------------------- Start of Program ---------------------------
 
 	rl.InitWindow(screenWidth, screenHeight, "DirDiff")
 
-    monitor := rl.GetCurrentMonitor()
-    screenWidth = rl.GetMonitorWidth(monitor)
-    screenHeight = rl.GetMonitorHeight(monitor)
+	monitor := rl.GetCurrentMonitor()
+	screenWidth = rl.GetMonitorWidth(monitor)
+	screenHeight = rl.GetMonitorHeight(monitor)
 
-    rl.SetWindowSize(screenWidth, screenHeight)
-    rl.SetWindowPosition(0,0)
-    rl.ClearWindowState({.WINDOW_HIDDEN})
+	rl.SetWindowSize(screenWidth, screenHeight)
+	rl.SetWindowPosition(0, 0)
+	rl.ClearWindowState({.WINDOW_HIDDEN})
 
 	rl.SetTargetFPS(rl.GetMonitorRefreshRate(0))
 
