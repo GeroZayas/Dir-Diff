@@ -53,6 +53,9 @@ FONT_ID_BODY_30 :: 6
 FONT_ID_BODY_28 :: 7
 FONT_ID_BODY_24 :: 8
 
+DROP_DIR_FONT_SIZE :: 20
+CONTENTS_LIST_FONT_SIZE :: 18
+
 // Colors for top stripe
 COLOR_TOP_BORDER_1 :: clay.Color{168, 66, 28, 255}
 COLOR_TOP_BORDER_2 :: clay.Color{223, 110, 44, 255}
@@ -106,6 +109,9 @@ is_dir: bool
 dir_1_path: cstring
 dir_2_path: cstring
 
+dropped_dir_1_info: DroppedDirInfo
+dropped_dir_2_info: DroppedDirInfo
+
 
 // STRUCTS
 // =========
@@ -117,6 +123,15 @@ DirectoryInfo :: struct {
 	files_array: [dynamic]os.File_Info,
 }
 
+DroppedDirInfo :: struct {
+	total_dirs:        int,
+	total_files:       int,
+	modification_time: int,
+	creation_time:     int,
+	fullpath:          string,
+	name:              string,
+}
+
 // ENUMS
 // =========
 Screens :: enum {
@@ -124,7 +139,7 @@ Screens :: enum {
 	MainProgramScreen,
 }
 
-currentScreen: Screens //AAA
+currentScreen: Screens
 
 
 // PROCEDURES
@@ -320,7 +335,6 @@ lorem_ipsum :: proc() -> (lorem: string) {
 	return
 }
 
-// BBB
 /*
 Checks a) if something has been dropped to area b) if it only ONE thing
 c) if it is indeed a DIR. IF all former TRUE:  Loads DIR files and puts
@@ -399,7 +413,7 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 			files_path_list_os, os_err := os.read_directory_by_path(
 				string(dir_1_path),
 				0,
-				context.temp_allocator,
+				context.allocator,
 			)
 
 			// print("files_path_list[0]:", files_path_list_os[0])
@@ -422,23 +436,55 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 				print("ERROR: `ptr_foo_file_err` RAISED")
 			}
 
-			// ***
-			for file in files_path_list_os {
-				fmt.fprintfln(ptrFooFile, "FULLPATH : %v", file.fullpath)
-				fmt.fprintfln(ptrFooFile, "NAME     : %v", file.name)
-				fmt.fprintfln(ptrFooFile, "TYPE     : %v", file.type)
-			}
+			/*
+			File_Info :: struct {
+				fullpath:          string,        // fullpath of the file
+				name:              string,        // base name of the file
+
+				inode:             u128,          // might be zero if cannot be determined
+				device:            u64,           // might be zero if cannot be determined
+				size:              i64 `fmt:"M"`, // length in bytes for regular files; system-dependent for other file types
+				mode:              Permissions,   // file permission flags
+				type:              File_Type,
+
+				creation_time:     time.Time,
+				modification_time: time.Time,
+				access_time:       time.Time,
+			}*/
 
 			// ***
-			i: u32 = 0
-			for i < files_path_list.count {
-				// print(files_path_list.paths[i])
-				append(
-					&list_content_paths_dyn_array^,
-					strings.clone_from_cstring(files_path_list.paths[i]),
-				)
-				i += 1
+
+			counter_dirs := 0
+			counter_files := 0
+
+			// TODO: WE NEED A COUNTER FOR DIRS AND FILES
+			for file in files_path_list_os {
+				if file.type == .Regular {
+					counter_files += 1
+				} else if file.type == .Directory {
+					counter_dirs += 1
+				}
+
+				log.debug(typeid_of(type_of(file.name)))
+				append(&list_content_paths_dyn_array^, file.name)
 			}
+
+			fmt.fprintfln(ptrFooFile, "FOO     : %v", &list_content_paths_dyn_array^)
+
+			fmt.fprintfln(
+				ptrFooFile,
+				"=============================================================",
+			)
+
+			// i: u32 = 0
+			// for i < len(files_path_list_os) {
+			// 	// print(files_path_list.paths[i])
+			// 	append(
+			// 		&list_content_paths_dyn_array^,
+			// 		strings.clone_from_cstring(files_path_list.paths[i]),
+			// 	)
+			// 	i += 1
+			// }
 			print("======== DIR ADDED to list_files_dropped_dir1 ========")
 			rl.UnloadDroppedFiles(files)
 			rl.UnloadDroppedFiles(files_path_list)
@@ -514,7 +560,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				clay.TextElementConfig {
 					fontId        = 8,
 					// fontSize = clay.Hovered() ? 22 : 20,
-					fontSize      = 20,
+					fontSize      = DROP_DIR_FONT_SIZE,
 					textColor     = cast(clay.Color)rl.RAYWHITE,
 					letterSpacing = 2,
 				},
@@ -538,7 +584,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 			if clay.UI(clay.ID("DropDirContainer"))(
 			{
 				layout = {
-					sizing = {clay.SizingFixed(350), clay.SizingFixed(150)},
+					sizing = {clay.SizingFixed(450), clay.SizingFixed(150)},
 					padding = clay.PaddingAll(5),
 					childAlignment = {x = .Center, y = .Center},
 					layoutDirection = .LeftToRight,
@@ -564,9 +610,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						"Drag & Drop Dir 1",
 						clay.TextElementConfig {
 							fontId = 8,
-							fontSize = 14,
+							fontSize = DROP_DIR_FONT_SIZE,
 							textColor = COLOR_RL_RED,
-							letterSpacing = 1,
+							letterSpacing = 2,
 						},
 					)
 					if clay.UI(clay.ID("DropDir1"))(
@@ -636,9 +682,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						"Drag & Drop Dir 2",
 						clay.TextElementConfig {
 							fontId = 8,
-							fontSize = 14,
-							textColor = COLOR_RL_BLUE,
-							letterSpacing = 1,
+							fontSize = 20,
+							textColor = COLOR_RL_RED,
+							letterSpacing = 2,
 						},
 					)
 					if clay.UI(clay.ID("DropDir2"))(
@@ -678,8 +724,8 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir2ElementDataRec,
 						) {
-							// BBB
-							load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir2)
+							// load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir2)
+							load_dropped_dir_and_its_contents_os_version(&list_files_dropped_dir2)
 						}
 
 					}
@@ -795,7 +841,11 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					}
 					clay.Text(
 						text_to_put,
-						{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
+						{
+							textColor = COLOR_BLACK,
+							fontSize = CONTENTS_LIST_FONT_SIZE,
+							wrapMode = .None,
+						},
 					)
 				}
 			}
@@ -866,7 +916,11 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					}
 					clay.Text(
 						text_to_put,
-						{textColor = COLOR_BLACK, fontSize = 15, wrapMode = .Words},
+						{
+							textColor = COLOR_BLACK,
+							fontSize = CONTENTS_LIST_FONT_SIZE,
+							wrapMode = .Words,
+						},
 					)
 				}
 

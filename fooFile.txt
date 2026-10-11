@@ -1,3 +1,2 @@
-FULLPATH : /Users/gero/Documents/Coding/Odin-Programs/dir_diff/scratch_buffer/scratch_buffer.odin
-NAME     : scratch_buffer.odin
-TYPE     : Regular
+FOO     : &["resources", "example-raylib-transitions.c", "example1", "clay-renderer-raylib.odin", "clay-example.odin", "clay.odin", "macos", "clay.h", "wasm", "linux", "macos-arm64", "windows"]
+=============================================================
