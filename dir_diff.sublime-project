@@ -16,6 +16,7 @@
 	],
 	"settings":
 	{
+		"auto_complete": true,
 		"SublimeAnarchyDebug":
 		{
 			"breakpoints":

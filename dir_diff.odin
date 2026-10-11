@@ -5,10 +5,20 @@ To try and conform RGA colors
 
 *////////////////////////////////////////////////////////////////
 
-
 /*
-WORKING ON NOW (gero)(9 oct 2026):
+WORKING ON NOW (gero)(10 oct 2026):
 .- getting the info from uploaded dirs
+
+
+NOTES:
+.- os.read_directory_by_path() -> can allow us to not only compare the files common to
+both dirs based on their names, but also compare based on modification time (this can
+help us/the user decide which version of the file to keep)
+
+.- The idea could be to put in the box of Dropper Dir Info, the full path, amount of files vs dirs inside, creation and modification times
+	-- and below, the list of the dirs/files inside the main dir. we can use the fields from
+	the array of []File_Info for that
+	-- it would be great to have icons for dirs and a generic one for the files
 */
 
 package dir_diff
@@ -89,11 +99,13 @@ list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
 text_to_put: string
 files_path_list: rl.FilePathList
+files_path_list_os: []os.File_Info
 files: rl.FilePathList
 file_drop_error: bool
 is_dir: bool
 dir_1_path: cstring
 dir_2_path: cstring
+
 
 // STRUCTS
 // =========
@@ -314,7 +326,9 @@ Checks a) if something has been dropped to area b) if it only ONE thing
 c) if it is indeed a DIR. IF all former TRUE:  Loads DIR files and puts
 their paths (string) in given dynamic array to store.
 */
-load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynamic]string) {
+load_dropped_dir_and_its_contents_rl_version :: proc(
+	list_content_paths_dyn_array: ^[dynamic]string,
+) {
 	if rl.IsFileDropped() {
 		files = rl.LoadDroppedFiles()
 		if files.count > 1 {
@@ -353,6 +367,85 @@ load_dropped_dir_and_its_contents :: proc(list_content_paths_dyn_array: ^[dynami
 			rl.UnloadDroppedFiles(files)
 		}
 
+
+	}
+}
+
+
+load_dropped_dir_and_its_contents_os_version :: proc(
+	list_content_paths_dyn_array: ^[dynamic]string,
+) {
+	if rl.IsFileDropped() {
+		files = rl.LoadDroppedFiles()
+		if files.count > 1 {
+			rl.UnloadDroppedFiles(files)
+			file_drop_error = true
+			print("ERROR - More than one file")
+		} else {
+			file_drop_error = false
+		}
+
+		if !file_drop_error {
+			is_dir = !rl.IsPathFile(files.paths[0])
+			print("Is DIR?", is_dir)
+			dir_1_path = files.paths[0]
+		}
+
+		// ***
+		if is_dir {
+			print("======== DIR LOADED and EXPLORE with OS Odin package ========")
+			// print("files:", files)
+			files_path_list = rl.LoadDirectoryFiles(dir_1_path)
+			files_path_list_os, os_err := os.read_directory_by_path(
+				string(dir_1_path),
+				0,
+				context.temp_allocator,
+			)
+
+			// print("files_path_list[0]:", files_path_list_os[0])
+
+			temp_buf: []u8
+
+			foo: string = "Hello"
+
+			// ***
+			FOO_FILE_PATH :: "fooFile.txt"
+			ptrFooFile, ptr_foo_file_err := os.open(
+				FOO_FILE_PATH,
+				{.Write, .Create, .Trunc},
+				{.Write_User, .Read_Other, .Read_Group},
+			)
+			print(ptrFooFile)
+			defer os.close(ptrFooFile)
+
+			if ptr_foo_file_err != nil {
+				print("ERROR: `ptr_foo_file_err` RAISED")
+			}
+
+			// ***
+			for file in files_path_list_os {
+				fmt.fprintfln(ptrFooFile, "FULLPATH : %v", file.fullpath)
+				fmt.fprintfln(ptrFooFile, "NAME     : %v", file.name)
+				fmt.fprintfln(ptrFooFile, "TYPE     : %v", file.type)
+			}
+
+			// ***
+			i: u32 = 0
+			for i < files_path_list.count {
+				// print(files_path_list.paths[i])
+				append(
+					&list_content_paths_dyn_array^,
+					strings.clone_from_cstring(files_path_list.paths[i]),
+				)
+				i += 1
+			}
+			print("======== DIR ADDED to list_files_dropped_dir1 ========")
+			rl.UnloadDroppedFiles(files)
+			rl.UnloadDroppedFiles(files_path_list)
+			print("======== FILES UNLOADED ========")
+		} else {
+			rl.UnloadDroppedFiles(files)
+		}
 
 	}
 }
@@ -497,12 +590,15 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						},
 						) {}
 
-						pointer_data := clay.GetPointerState()
-						// fmt.printprintlnpointer_data)
+						pointer_data := clay.GetPointerState() // position of the mouse cursor
+
+						/* DOCS (gero):
+						 clay -> GetElementData se usa sobre todo para saber la posición absoluta y
+						 los bounding boxs dimensions de un elemento (por su ID)
+						 O sea, te permite saber en qué posición y con qué tamaño (dimensiones) se encuentra
+						 un determinado elemento en el layout */
 						dropDir1ElementData := clay.GetElementData(clay.ID("DropDir1"))
 
-						// print("dropDir1ElementData:")
-						// print(dropDir1ElementData)
 						dropDir1ElementDataRec := rl.Rectangle {
 							dropDir1ElementData.boundingBox.x,
 							dropDir1ElementData.boundingBox.y,
@@ -514,8 +610,10 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir1ElementDataRec,
 						) {
+							// ***
+							// load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir1)
+							load_dropped_dir_and_its_contents_os_version(&list_files_dropped_dir1)
 
-							load_dropped_dir_and_its_contents(&list_files_dropped_dir1)
 						}
 					}
 				}
@@ -581,7 +679,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							dropDir2ElementDataRec,
 						) {
 							// BBB
-							load_dropped_dir_and_its_contents(&list_files_dropped_dir2)
+							load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir2)
 						}
 
 					}
@@ -607,7 +705,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		},
 		) {
 
-			// ***
 			if clay.UI(clay.ID("GeneralAreaContainerDirInfoOne"))(
 			{
 				layout = {
@@ -632,7 +729,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					cornerRadius = clay.CornerRadiusAll(5),
 				},
 				) {
-					// ***
+
 					if clay.UI(clay.ID("test"))(
 					{
 						layout = {
@@ -728,7 +825,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					cornerRadius = clay.CornerRadiusAll(5),
 				},
 				) {
-					// ***
 					if clay.UI(clay.ID("test2"))(
 					{
 						layout = {

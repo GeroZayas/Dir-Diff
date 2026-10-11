@@ -1,0 +1,3 @@
+FULLPATH : /Users/gero/Documents/Coding/Odin-Programs/dir_diff/scratch_buffer/scratch_buffer.odin
+NAME     : scratch_buffer.odin
+TYPE     : Regular

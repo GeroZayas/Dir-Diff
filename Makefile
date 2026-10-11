@@ -17,7 +17,7 @@ debug:
 	odin build . -debug -o:none
 
 clean:
-	rm -rf ./debug_build-main_odin.dSYM ./dir_diff.dSYM ./dir-diff.dSYM ./debug_build-main_odin
+	rm -rf ./debug_build-main_odin.dSYM ./dir_diff.dSYM ./dir-diff.dSYM ./debug_build-main_odin dir_diff debug_build-dir_diff_odin debug_build-dir_diff_odin.dSYM
 
 
 git:
