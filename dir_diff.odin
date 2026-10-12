@@ -375,7 +375,7 @@ load_dropped_dir_and_its_contents_rl_version :: proc(
 			}
 			print("======== DIR ADDED to list_files_dropped_dir1 ========")
 			rl.UnloadDroppedFiles(files)
-			rl.UnloadDroppedFiles(files_path_list)
+			rl.UnloadDirectoryFiles(files_path_list)
 			print("======== FILES UNLOADED ========")
 		} else {
 			rl.UnloadDroppedFiles(files)
@@ -408,19 +408,14 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 		// ***
 		if is_dir {
 			print("======== DIR LOADED and EXPLORE with OS Odin package ========")
-			// print("files:", files)
-			files_path_list = rl.LoadDirectoryFiles(dir_1_path)
+
 			files_path_list_os, os_err := os.read_directory_by_path(
 				string(dir_1_path),
 				0,
 				context.allocator,
 			)
 
-			// print("files_path_list[0]:", files_path_list_os[0])
-
-			temp_buf: []u8
-
-			foo: string = "Hello"
+			defer os.file_info_slice_delete(files_path_list_os, context.allocator)
 
 			// ***
 			FOO_FILE_PATH :: "fooFile.txt"
@@ -464,30 +459,18 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 				} else if file.type == .Directory {
 					counter_dirs += 1
 				}
-
-				log.debug(typeid_of(type_of(file.name)))
-				append(&list_content_paths_dyn_array^, file.name)
+				append(list_content_paths_dyn_array, strings.clone(file.name))
 			}
-
-			fmt.fprintfln(ptrFooFile, "FOO     : %v", &list_content_paths_dyn_array^)
+			// AAA
+			fmt.fprintfln(ptrFooFile, "FOO     : %v", list_content_paths_dyn_array^)
 
 			fmt.fprintfln(
 				ptrFooFile,
 				"=============================================================",
 			)
 
-			// i: u32 = 0
-			// for i < len(files_path_list_os) {
-			// 	// print(files_path_list.paths[i])
-			// 	append(
-			// 		&list_content_paths_dyn_array^,
-			// 		strings.clone_from_cstring(files_path_list.paths[i]),
-			// 	)
-			// 	i += 1
-			// }
 			print("======== DIR ADDED to list_files_dropped_dir1 ========")
 			rl.UnloadDroppedFiles(files)
-			rl.UnloadDroppedFiles(files_path_list)
 			print("======== FILES UNLOADED ========")
 		} else {
 			rl.UnloadDroppedFiles(files)
@@ -683,7 +666,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						clay.TextElementConfig {
 							fontId = 8,
 							fontSize = 20,
-							textColor = COLOR_RL_RED,
+							textColor = COLOR_RL_BLUE,
 							letterSpacing = 2,
 						},
 					)
@@ -1317,7 +1300,9 @@ main :: proc() {
 
 	// --------------------------- End of Program ---------------------------
 
-	// Clean Ups: -----------------------
+	// ------------------------------ CLEAN UP ---------------------------
+
+	// AAA
 	for str in list_files_dropped_dir1 {
 		delete(str)
 	}
@@ -1334,7 +1319,7 @@ main :: proc() {
 
 	log.destroy_console_logger(context.logger)
 
-	// End of Clean Ups: ----------------
+	// --------------------------- End of CLEAN UP ------------------------
 
 
 	if len(track.allocation_map) > 0 {

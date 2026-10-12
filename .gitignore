@@ -94,3 +94,6 @@ foo-bar.zip
 help.txt
 inner-notes-gero.md
 foo-bar.zip
+dir_diff.dSYM/Contents/Info.plist
+dir_diff.dSYM/Contents/Resources/DWARF/dir_diff.rdi
+dir_diff.dSYM/Contents/Resources/Relocations/aarch64/dir_diff.yml

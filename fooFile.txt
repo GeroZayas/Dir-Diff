@@ -1,2 +1,2 @@
-FOO     : &["resources", "example-raylib-transitions.c", "example1", "clay-renderer-raylib.odin", "clay-example.odin", "clay.odin", "macos", "clay.h", "wasm", "linux", "macos-arm64", "windows"]
+FOO     : ["resources", "example-raylib-transitions.c", "example1", "clay-renderer-raylib.odin", "clay-example.odin"]
 =============================================================
