@@ -1,2 +1,2 @@
-FOO     : ["resources", "example-raylib-transitions.c", "example1", "clay-renderer-raylib.odin", "clay-example.odin"]
+FOO     : File_Info{fullpath = "/Users/gero/Documents/Coding/Odin-Programs/dir_diff/example1", name = "example1", inode = 9454534, device = 16777230, size = 224B, mode = Permissions{Execute_Other, Read_Other, Execute_Group, Read_Group, Execute_User, Write_User, Read_User}, type = "Directory", creation_time = 2026-08-28 05:49:20.926862641 +0000 UTC, modification_time = 2026-08-31 20:49:49.462064429 +0000 UTC, access_time = 2026-10-12 20:33:59.578416000 +0000 UTC}
 =============================================================

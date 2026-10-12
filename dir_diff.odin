@@ -6,19 +6,11 @@ To try and conform RGA colors
 *////////////////////////////////////////////////////////////////
 
 /*
-WORKING ON NOW (gero)(10 oct 2026):
+WORKING ON NOW (gero)(12 oct 2026):
 .- getting the info from uploaded dirs
 
-
 NOTES:
-.- os.read_directory_by_path() -> can allow us to not only compare the files common to
-both dirs based on their names, but also compare based on modification time (this can
-help us/the user decide which version of the file to keep)
 
-.- The idea could be to put in the box of Dropper Dir Info, the full path, amount of files vs dirs inside, creation and modification times
-	-- and below, the list of the dirs/files inside the main dir. we can use the fields from
-	the array of []File_Info for that
-	-- it would be great to have icons for dirs and a generic one for the files
 */
 
 package dir_diff
@@ -100,7 +92,8 @@ btn1_clicked: rl.Texture2D = {}
 // Others
 list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
-text_to_put: string
+dropped_dir_contents_text: string
+dropped_dir_main_info_text: string
 files_path_list: rl.FilePathList
 files_path_list_os: []os.File_Info
 files: rl.FilePathList
@@ -109,6 +102,8 @@ is_dir: bool
 dir_1_path: cstring
 dir_2_path: cstring
 
+
+// ***
 dropped_dir_1_info: DroppedDirInfo
 dropped_dir_2_info: DroppedDirInfo
 
@@ -123,11 +118,14 @@ DirectoryInfo :: struct {
 	files_array: [dynamic]os.File_Info,
 }
 
+// ***
 DroppedDirInfo :: struct {
 	total_dirs:        int,
 	total_files:       int,
-	modification_time: int,
-	creation_time:     int,
+	// modification_time: time.Time,
+	// creation_time:     time.Time,
+	modification_time: string,
+	creation_time:     string,
 	fullpath:          string,
 	name:              string,
 }
@@ -327,7 +325,7 @@ rectangle_trans_elem_config :: proc() -> clay.TransitionElementConfig {
 
 }
 
-
+/*Placeholder text for before dropping contents of a DIR*/
 lorem_ipsum :: proc() -> (lorem: string) {
 	lorem = `
 	Drop a DIR and see the contents here...
@@ -388,6 +386,7 @@ load_dropped_dir_and_its_contents_rl_version :: proc(
 
 load_dropped_dir_and_its_contents_os_version :: proc(
 	list_content_paths_dyn_array: ^[dynamic]string,
+	dropped_dir_info_struct: ^DroppedDirInfo,
 ) {
 	if rl.IsFileDropped() {
 		files = rl.LoadDroppedFiles()
@@ -405,7 +404,7 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 			dir_1_path = files.paths[0]
 		}
 
-		// ***
+
 		if is_dir {
 			print("======== DIR LOADED and EXPLORE with OS Odin package ========")
 
@@ -417,7 +416,7 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 
 			defer os.file_info_slice_delete(files_path_list_os, context.allocator)
 
-			// ***
+
 			FOO_FILE_PATH :: "fooFile.txt"
 			ptrFooFile, ptr_foo_file_err := os.open(
 				FOO_FILE_PATH,
@@ -447,8 +446,6 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 				access_time:       time.Time,
 			}*/
 
-			// ***
-
 			counter_dirs := 0
 			counter_files := 0
 
@@ -461,8 +458,41 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 				}
 				append(list_content_paths_dyn_array, strings.clone(file.name))
 			}
-			// AAA
-			fmt.fprintfln(ptrFooFile, "FOO     : %v", list_content_paths_dyn_array^)
+
+			/*
+			DroppedDirInfo :: struct {
+				total_dirs:        int,
+				total_files:       int,
+				modification_time: int,
+				creation_time:     int,
+				fullpath:          string,
+				name:              string,
+			}
+			*/
+
+			main_dir, main_dir_err := os.stat(string(dir_1_path), context.allocator)
+			defer os.file_info_delete(main_dir, context.allocator)
+
+			buffer: [500]u8
+
+
+			// ***
+			dropped_dir_info_struct^ = {
+				total_dirs        = counter_dirs,
+				total_files       = counter_files,
+				modification_time = time.to_string_yyyy_mm_dd(
+					main_dir.modification_time,
+					buffer[:],
+				),
+				creation_time     = time.to_string_yyyy_mm_dd(main_dir.creation_time, buffer[:]),
+				name              = main_dir.name,
+				fullpath          = main_dir.fullpath,
+			}
+
+			time_foo := time.to_string_yyyy_mm_dd(main_dir.creation_time, buffer[:])
+			print("THE CREATION TIME IS = %v", time_foo)
+
+			fmt.fprintfln(ptrFooFile, "FOO     : %v", main_dir)
 
 			fmt.fprintfln(
 				ptrFooFile,
@@ -606,7 +636,6 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							// padding = clay.PaddingAll(2),
 							layoutDirection = .TopToBottom,
 						},
-						// backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						backgroundColor = clay.Hovered() ? COLOR_LIGHTGRAYGERO_2 : COLOR_LIGHTGRAYGERO_1,
 						cornerRadius = clay.CornerRadiusAll(5),
 						transition = fade_out_transition(),
@@ -639,13 +668,14 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir1ElementDataRec,
 						) {
-							// ***
-							// load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir1)
-							load_dropped_dir_and_its_contents_os_version(&list_files_dropped_dir1)
-
+							load_dropped_dir_and_its_contents_os_version(
+								&list_files_dropped_dir1,
+								&dropped_dir_1_info, // ***
+							)
 						}
 					}
 				}
+
 
 				if file_drop_error {
 					rl.DrawRectangleV({100, 100}, {200, 200}, rl.WHITE)
@@ -691,11 +721,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						) {}
 
 						pointer_data := clay.GetPointerState()
-						// fmt.printprintlnpointer_data)
 						dropDir2ElementData := clay.GetElementData(clay.ID("DropDir2"))
-
-						// print("dropDir2ElementData:")
-						// print(dropDir2ElementData)
 						dropDir2ElementDataRec := rl.Rectangle {
 							dropDir2ElementData.boundingBox.x,
 							dropDir2ElementData.boundingBox.y,
@@ -707,8 +733,10 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							pointer_data.position,
 							dropDir2ElementDataRec,
 						) {
-							// load_dropped_dir_and_its_contents_rl_version(&list_files_dropped_dir2)
-							load_dropped_dir_and_its_contents_os_version(&list_files_dropped_dir2)
+							load_dropped_dir_and_its_contents_os_version(
+								&list_files_dropped_dir2,
+								&dropped_dir_2_info, // ***
+							)
 						}
 
 					}
