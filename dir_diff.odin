@@ -59,6 +59,7 @@ COLOR_TOP_BORDER_5 :: clay.Color{240, 213, 137, 255}
 COLOR_RL_RED := cast(clay.Color)rl.RED // { 230, 41, 55, 255 }
 COLOR_RL_RED_LOW_ALPHA := clay.Color{255, 250, 250, 255}
 COLOR_RL_BLUE := cast(clay.Color)rl.BLUE // { 0, 121, 241, 255 }
+COLOR_RL_WHITE := cast(clay.Color)rl.WHITE
 COLOR_RL_BLUE_LOW_ALPHA := clay.Color{247, 251, 255, 255}
 
 COLOR_LIGHT :: clay.Color{244, 235, 230, 255}
@@ -94,6 +95,7 @@ list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
 dropped_dir_contents_text: string
 dropped_dir_main_info_text: string
+dropped_dir_main_info_string_from_struct: string
 files_path_list: rl.FilePathList
 files_path_list_os: []os.File_Info
 files: rl.FilePathList
@@ -490,7 +492,7 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 			}
 
 			time_foo := time.to_string_yyyy_mm_dd(main_dir.creation_time, buffer[:])
-			print("THE CREATION TIME IS = %v", time_foo)
+			printf("THE CREATION TIME IS = %v", time_foo)
 
 			fmt.fprintfln(ptrFooFile, "FOO     : %v", main_dir)
 
@@ -498,6 +500,21 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 				ptrFooFile,
 				"=============================================================",
 			)
+
+			// ***
+			sb := strings.builder_make()
+			defer strings.builder_destroy(&sb)
+
+			strings.write_string(&sb, "Creation Time: ")
+			strings.write_string(&sb, dropped_dir_info_struct.creation_time)
+			strings.write_string(&sb, "\tModification Time: ")
+			strings.write_string(&sb, dropped_dir_info_struct.modification_time)
+			strings.write_string(&sb, "\nTotal Files: ")
+			strings.write_int(&sb, dropped_dir_info_struct.total_files)
+			strings.write_string(&sb, "\tTotal Dirs: ")
+			strings.write_int(&sb, dropped_dir_info_struct.total_dirs)
+			dropped_dir_main_info_string_from_struct = strings.clone(strings.to_string(sb)) // ***
+
 
 			print("======== DIR ADDED to list_files_dropped_dir1 ========")
 			rl.UnloadDroppedFiles(files)
@@ -677,9 +694,9 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 
 
-				if file_drop_error {
-					rl.DrawRectangleV({100, 100}, {200, 200}, rl.WHITE)
-				}
+				// if file_drop_error {
+				// 	rl.DrawRectangleV({100, 100}, {200, 200}, rl.WHITE)
+				// }
 
 				if clay.UI(clay.ID("DropDir2Container"))(
 				{
@@ -774,6 +791,26 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				cornerRadius = clay.CornerRadiusAll(5),
 			},
 			) {
+
+				// Check if anything valid has been dropped
+				// if not, we keep the Lorem Ipsum text
+				// Otherwise, we paint the text:
+
+				if len(list_files_dropped_dir1) == 0 {
+					dropped_dir_contents_text = lorem_ipsum()
+					dropped_dir_main_info_text = lorem_ipsum()
+				} else {
+					dropped_dir_contents_text = strings.join(
+						list_files_dropped_dir1[:],
+						"\n",
+						allocator = context.temp_allocator,
+					)
+					dropped_dir_main_info_text = dropped_dir_main_info_string_from_struct // *** TO DO fix this
+					// dropped_dir_main_info_text = "HELLO" // *** TO DO fix this
+
+				}
+
+
 				if clay.UI(clay.ID("TopContainerDirInfoOne"))(
 				{
 					layout = {
@@ -787,7 +824,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				},
 				) {
 
-					if clay.UI(clay.ID("test"))(
+					if clay.UI(clay.ID("Dir1MainInfo"))(
 					{
 						layout = {
 							sizing = {clay.SizingGrow(), clay.SizingFixed(80)},
@@ -795,10 +832,22 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							layoutDirection = .LeftToRight,
 							padding = {5, 5, 5, 5},
 						},
-						backgroundColor = COLOR_RL_BLUE,
+						backgroundColor = COLOR_ORANGE,
 						cornerRadius = clay.CornerRadiusAll(5),
 					},
-					) {}
+					) {
+
+						// Paint the text of the Dropped Dir 1 INFO (how many files, creation time and so on)
+
+						clay.Text(
+							dropped_dir_main_info_text,
+							{
+								textColor = cast(clay.Color)rl.WHITE,
+								fontSize = CONTENTS_LIST_FONT_SIZE,
+								wrapMode = .None,
+							},
+						)
+					}
 				}
 
 				if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
@@ -839,25 +888,16 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					// },
 					// ) {}
 
-					// PUT LOREM IPSUM OR LEADED FILE PATHS
-
-					if len(list_files_dropped_dir1) == 0 {
-						text_to_put = lorem_ipsum()
-					} else {
-						text_to_put = strings.join(
-							list_files_dropped_dir1[:],
-							"\n",
-							allocator = context.temp_allocator,
-						)
-					}
+					// TEXT FOR THE LIST OF FILES AND DIRS INSIDE DROPPED DIR 1:
 					clay.Text(
-						text_to_put,
+						dropped_dir_contents_text,
 						{
 							textColor = COLOR_BLACK,
 							fontSize = CONTENTS_LIST_FONT_SIZE,
 							wrapMode = .None,
 						},
 					)
+
 				}
 			}
 
@@ -886,7 +926,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 					cornerRadius = clay.CornerRadiusAll(5),
 				},
 				) {
-					if clay.UI(clay.ID("test2"))(
+					if clay.UI(clay.ID("Dir2MainInfo"))(
 					{
 						layout = {
 							sizing = {clay.SizingGrow(), clay.SizingFixed(80)},
@@ -894,7 +934,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							layoutDirection = .LeftToRight,
 							padding = {5, 5, 5, 5},
 						},
-						backgroundColor = COLOR_RL_BLUE,
+						backgroundColor = COLOR_ORANGE,
 						cornerRadius = clay.CornerRadiusAll(5),
 					},
 					) {}
@@ -917,16 +957,16 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				},
 				) {
 					if len(list_files_dropped_dir2) == 0 {
-						text_to_put = lorem_ipsum()
+						dropped_dir_contents_text = lorem_ipsum()
 					} else {
-						text_to_put = strings.join(
+						dropped_dir_contents_text = strings.join(
 							list_files_dropped_dir2[:],
 							"\n",
 							allocator = context.temp_allocator,
 						)
 					}
 					clay.Text(
-						text_to_put,
+						dropped_dir_contents_text,
 						{
 							textColor = COLOR_BLACK,
 							fontSize = CONTENTS_LIST_FONT_SIZE,
@@ -1279,6 +1319,7 @@ main :: proc() {
 
 	currentScreen = Screens.MainProgramScreen
 
+
 	for !rl.WindowShouldClose() {
 		defer free_all(context.temp_allocator)
 
@@ -1314,6 +1355,7 @@ main :: proc() {
 			currentScreen = Screens.IntroScreen
 		}
 
+
 		// --------------------------- DRAW ---------------------------
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
@@ -1330,7 +1372,6 @@ main :: proc() {
 
 	// ------------------------------ CLEAN UP ---------------------------
 
-	// AAA
 	for str in list_files_dropped_dir1 {
 		delete(str)
 	}
