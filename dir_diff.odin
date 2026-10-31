@@ -6,8 +6,13 @@ To try and conform RGA colors
 *////////////////////////////////////////////////////////////////
 
 /*
-WORKING ON NOW (gero)(12 oct 2026):
-.- getting the info from uploaded dirs
+WORKING ON NOW (gero)(19 oct 2026): // ***
+.- Continue with painting the text of main info of dir 2
+	but, we need to figure out how not to overwrite the text for dir 1
+	something to do with "dropped_dir_main_info_string_from_struct: string"
+	also, 
+	- we need to clear the dynamic array of files loaded whenever
+	another dir is dropped
 
 NOTES:
 
@@ -94,8 +99,8 @@ btn1_clicked: rl.Texture2D = {}
 list_files_dropped_dir1: [dynamic]string
 list_files_dropped_dir2: [dynamic]string
 dropped_dir_contents_text: string
-dropped_dir_main_info_text: string
-dropped_dir_main_info_string_from_struct: string
+dropped_dir_main_info_text: [2]string
+dropped_dir_main_info_string_from_struct: [2]string // ***
 files_path_list: rl.FilePathList
 files_path_list_os: []os.File_Info
 files: rl.FilePathList
@@ -389,6 +394,7 @@ load_dropped_dir_and_its_contents_rl_version :: proc(
 load_dropped_dir_and_its_contents_os_version :: proc(
 	list_content_paths_dyn_array: ^[dynamic]string,
 	dropped_dir_info_struct: ^DroppedDirInfo,
+	dir_id_number: u8,
 ) {
 	if rl.IsFileDropped() {
 		files = rl.LoadDroppedFiles()
@@ -513,7 +519,9 @@ load_dropped_dir_and_its_contents_os_version :: proc(
 			strings.write_int(&sb, dropped_dir_info_struct.total_files)
 			strings.write_string(&sb, "\tTotal Dirs: ")
 			strings.write_int(&sb, dropped_dir_info_struct.total_dirs)
-			dropped_dir_main_info_string_from_struct = strings.clone(strings.to_string(sb)) // ***
+			dropped_dir_main_info_string_from_struct[dir_id_number - 1] = strings.clone(
+				strings.to_string(sb),
+			) // ***
 
 
 			print("======== DIR ADDED to list_files_dropped_dir1 ========")
@@ -688,6 +696,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							load_dropped_dir_and_its_contents_os_version(
 								&list_files_dropped_dir1,
 								&dropped_dir_1_info, // ***
+								1,
 							)
 						}
 					}
@@ -753,6 +762,7 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 							load_dropped_dir_and_its_contents_os_version(
 								&list_files_dropped_dir2,
 								&dropped_dir_2_info, // ***
+								2,
 							)
 						}
 
@@ -764,6 +774,10 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 		draw_space(id = "Space3", color = COLOR_LIGHT)
 
 		draw_space(id = "AboveDirsPathsArea", color = COLOR_LIGHT_HOVER, sizing = 5)
+
+		// ===========================================================
+		// -------------------------- DIR 1 --------------------------
+		// ===========================================================
 
 		if clay.UI(clay.ID("DirsInfoArea"))(
 		{
@@ -798,15 +812,14 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 
 				if len(list_files_dropped_dir1) == 0 {
 					dropped_dir_contents_text = lorem_ipsum()
-					dropped_dir_main_info_text = lorem_ipsum()
+					dropped_dir_main_info_text[0] = lorem_ipsum()
 				} else {
 					dropped_dir_contents_text = strings.join(
 						list_files_dropped_dir1[:],
 						"\n",
 						allocator = context.temp_allocator,
 					)
-					dropped_dir_main_info_text = dropped_dir_main_info_string_from_struct // *** TO DO fix this
-					// dropped_dir_main_info_text = "HELLO" // *** TO DO fix this
+					dropped_dir_main_info_text[0] = dropped_dir_main_info_string_from_struct[0] // ***
 
 				}
 
@@ -840,15 +853,16 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						// Paint the text of the Dropped Dir 1 INFO (how many files, creation time and so on)
 
 						clay.Text(
-							dropped_dir_main_info_text,
+							dropped_dir_main_info_text[0],
 							{
 								textColor = cast(clay.Color)rl.WHITE,
 								fontSize = CONTENTS_LIST_FONT_SIZE,
-								wrapMode = .None,
+								wrapMode = .Words,
 							},
 						)
 					}
 				}
+
 
 				if clay.UI(clay.ID("ScrollContainerDirInfoOne"))(
 				{
@@ -901,6 +915,10 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				}
 			}
 
+			// ===========================================================
+			// -------------------------- DIR 2 --------------------------
+			// ===========================================================
+
 			if clay.UI(clay.ID("GeneralAreaContainerDirInfoTwo"))(
 			{
 				layout = {
@@ -937,7 +955,18 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 						backgroundColor = COLOR_ORANGE,
 						cornerRadius = clay.CornerRadiusAll(5),
 					},
-					) {}
+					) {
+						// Paint the text of the Dropped Dir 2 INFO (how many files, creation time and so on)
+
+						clay.Text(
+							dropped_dir_main_info_text[1],
+							{
+								textColor = cast(clay.Color)rl.WHITE,
+								fontSize = CONTENTS_LIST_FONT_SIZE,
+								wrapMode = .Words,
+							},
+						)
+					}
 				}
 
 				if clay.UI(clay.ID("ScrollContainerDirInfoTwo"))(
@@ -958,13 +987,16 @@ createLayout :: proc(lerpValue: f32, frametime: f32) -> clay.ClayArray(clay.Rend
 				) {
 					if len(list_files_dropped_dir2) == 0 {
 						dropped_dir_contents_text = lorem_ipsum()
+						dropped_dir_main_info_text[1] = lorem_ipsum()
 					} else {
 						dropped_dir_contents_text = strings.join(
 							list_files_dropped_dir2[:],
 							"\n",
 							allocator = context.temp_allocator,
 						)
+						dropped_dir_main_info_text[1] = dropped_dir_main_info_string_from_struct[1] // ***
 					}
+
 					clay.Text(
 						dropped_dir_contents_text,
 						{
@@ -1380,6 +1412,10 @@ main :: proc() {
 		delete(str)
 	}
 
+	for str in dropped_dir_main_info_string_from_struct {
+		delete(str)
+	}
+	
 	free_all(arena_alloc)
 	free(clay_arena.memory)
 	delete(raylib_fonts)
